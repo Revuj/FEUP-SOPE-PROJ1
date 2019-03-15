@@ -54,8 +54,8 @@ int readDirectory(char *dirName)
 int main(int argc, char **argv, char **envp)
 {
     int recursive = 1;
-    if (recursive)
-    { // "-r" was input
+    if (recursive) // "-r" was input
+    { 
         return readDirectory(argv[1]);
     }
     return 0;
