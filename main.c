@@ -139,12 +139,12 @@ int readDirectory(char *dirName)
 
 int main(int argc, char **argv, char **envp)
 {
-    char * utilitario = "foresinc";
+    //char * utilitario = "foresinc";
     char * pathName =".";
-    if (strcmp(argv[0], utilitario) != 0)
-    {
-        fprintf(stderr, "Utilitario invalido\n");
-    }
+    // if (strcmp(argv[0], utilitario) != 0)
+    // {
+    //     fprintf(stderr, "Utilitario invalido\n");
+    // }
 
     variableStatus VStatus;
     memset(&VStatus, 0, sizeof(variableStatus));
@@ -173,7 +173,7 @@ int main(int argc, char **argv, char **envp)
 
     if (VStatus.analise_files == 1) // "-r" was input
     { 
-        //return readDirectory(argv[1]);
+        return readDirectory(argv[2]);
     }
 
     return 0;
