@@ -6,8 +6,11 @@
 #include <dirent.h>
 #include <unistd.h>
 #include <string.h>
+#include <time.h>
 
-#define NAME_LENGTH 20
+#define IS_BIT_SET(var, pos) ((var) & (1 << (pos)))
+
+#define NAME_LENGTH 256
 #define SO_ERROR_NUMBER -1
 #define FILE_INFO_SIZE 512
 
@@ -26,7 +29,7 @@ typedef struct Number
     int directories;
 } Number;
 
-char *fileType(struct stat * stat_entry)
+char *fileType(struct stat *stat_entry)
 {
     if (S_ISREG(stat_entry->st_mode))
         return "regular";
@@ -44,7 +47,22 @@ char *fileType(struct stat * stat_entry)
         return "socket";
     else
         return "unknown";
-        
+}
+
+//consultar link para as flags
+//http://pubs.opengroup.org/onlinepubs/7908799/xsh/sysstat.h.html
+char *fileAccess(struct stat *stat_entry)
+{ //perguntar ao professor se é suposto serem apenas as permissões do owner
+    if ((stat_entry->st_mode & S_IRWXU) == S_IRWXU)
+        return "wrx";
+    else if ((stat_entry->st_mode & S_IRUSR) == S_IRUSR)
+        return "r";
+    else if ((stat_entry->st_mode & S_IWUSR) == S_IWUSR)
+        return "w";
+    else if ((stat_entry->st_mode & S_IXUSR) == S_IXUSR)
+        return "x";
+
+    return " ";
 }
 
 /* funcao a completar e a compor*/
@@ -57,8 +75,7 @@ void analyseFile(const char *name, char *file_info)
         exit(1);
     }
     //file name, file_type, filesize(bytes),file_access  , file permission change, file modification date
-    sprintf(file_info, "%s, %s, %ld , %ld ,%ld", name,fileType(&stat_entry),stat_entry.st_size,stat_entry.st_ctime,stat_entry.st_mtime);
-    
+    sprintf(file_info, "%s, %s, %ld, %s, %s, %s", name, fileType(&stat_entry), stat_entry.st_size, fileAccess(&stat_entry), ctime(&stat_entry.st_ctime), ctime(&stat_entry.st_mtime));
 }
 
 void completeVariableStatusStruct(variableStatus *Vstatus, int argc, char **argv)
@@ -91,16 +108,20 @@ void completeVariableStatusStruct(variableStatus *Vstatus, int argc, char **argv
     }
 }
 
-
+void printFileInfo(const char *name) {
+    char *file_info = malloc(512 * sizeof(char));
+    analyseFile(name, file_info);
+    printf("%s\n", file_info);
+}
 
 int readDirectory(char *dirName)
 {
-    char * dirIgnore1 = ".";
-    char * dirIgnore2 = "..";
+    char *dirIgnore1 = ".";
+    char *dirIgnore2 = "..";
 
     DIR *dir;
     struct dirent *dentry;
-    char * name = malloc(sizeof(char) * NAME_LENGTH);
+    char *name = malloc(sizeof(char) * NAME_LENGTH);
 
     if ((dir = opendir(dirName)) == NULL)
     { //directory was open unsucessfuly
@@ -111,10 +132,8 @@ int readDirectory(char *dirName)
     while ((dentry = readdir(dir)) != NULL)
     {
         struct stat stat_entry;
-        
-        sprintf(name, "%s/%s", dirName, dentry->d_name);
 
-        printf("%s - ", name);
+        sprintf(name, "%s/%s", dirName, dentry->d_name);
 
         if (stat(name, &stat_entry) == SO_ERROR_NUMBER)
         {
@@ -124,13 +143,14 @@ int readDirectory(char *dirName)
 
         if (S_ISREG(stat_entry.st_mode))
         {
-            printf("Is Regular\n");
+            printFileInfo(name);
         }
         else if (S_ISDIR(stat_entry.st_mode))
         {
-            printf("Is Directory\n");
-            if ((strcmp(dentry->d_name, dirIgnore1) != 0) && (strcmp(dentry->d_name, dirIgnore2) != 0))
+            if ((strcmp(dentry->d_name, dirIgnore1) != 0) && (strcmp(dentry->d_name, dirIgnore2) != 0)) {
+                printFileInfo(name);
                 readDirectory(name);
+            }
         }
     }
 
@@ -140,7 +160,7 @@ int readDirectory(char *dirName)
 int main(int argc, char **argv, char **envp)
 {
     //char * utilitario = "foresinc";
-    char * pathName =".";
+    //char *pathName = ".";
     // if (strcmp(argv[0], utilitario) != 0)
     // {
     //     fprintf(stderr, "Utilitario invalido\n");
@@ -161,10 +181,6 @@ int main(int argc, char **argv, char **envp)
 
     printf("-v: %d\n", VStatus.logfile);
 
-    char *file_info = malloc( (FILE_INFO_SIZE + 1) * sizeof(char));
-    analyseFile(pathName, file_info);
-    printf("%s\n", file_info);
-
     char *enviro = getenv("LOGFILENAME");
     if (enviro != NULL)
     {
@@ -172,8 +188,12 @@ int main(int argc, char **argv, char **envp)
     }
 
     if (VStatus.analise_files == 1) // "-r" was input
-    { 
+    {
         return readDirectory(argv[2]);
+    }
+    else if (argc == 2) // only 1 file to read
+    {
+        printFileInfo(argv[1]);
     }
 
     return 0;
