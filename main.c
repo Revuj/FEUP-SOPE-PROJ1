@@ -13,6 +13,7 @@
 #define NAME_LENGTH 256
 #define SO_ERROR_NUMBER -1
 #define FILE_INFO_SIZE 512
+#define TIME_LENGHT 20
 
 typedef struct active_variables
 {
@@ -74,8 +75,13 @@ void analyseFile(const char *name, char *file_info)
         perror("Error in analyseFile while trying to retrive information about file");
         exit(1);
     }
+    char creationDate[TIME_LENGHT];
+    strftime(creationDate, TIME_LENGHT, "%Y-%m-%dT%H:%M:%S", localtime(&stat_entry.st_ctime));
+
+    char modificationDate[TIME_LENGHT];
+    strftime(modificationDate, TIME_LENGHT, "%Y-%m-%dT%H:%M:%S", localtime(&stat_entry.st_mtime));
     //file name, file_type, filesize(bytes),file_access  , file permission change, file modification date
-    sprintf(file_info, "%s, %s, %ld, %s, %s, %s", name, fileType(&stat_entry), stat_entry.st_size, fileAccess(&stat_entry), ctime(&stat_entry.st_ctime), ctime(&stat_entry.st_mtime));
+    sprintf(file_info,"%s,%s,%ld,%s,%s,%s", name, fileType(&stat_entry), stat_entry.st_size, fileAccess(&stat_entry), creationDate, modificationDate);
 }
 
 void completeVariableStatusStruct(variableStatus *Vstatus, int argc, char **argv)
@@ -112,6 +118,7 @@ void printFileInfo(const char *name) {
     char *file_info = malloc(512 * sizeof(char));
     analyseFile(name, file_info);
     printf("%s\n", file_info);
+    free(file_info);
 }
 
 int readDirectory(char *dirName)
