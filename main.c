@@ -11,7 +11,7 @@
 
 #define IS_BIT_SET(var, pos) ((var) & (1 << (pos)))
 
-#define NAME_LENGTH 256
+#define NAME_LENGTH 255
 #define SO_ERROR_NUMBER -1
 #define FILE_INFO_SIZE 512
 #define TIME_LENGHT 20
@@ -54,11 +54,11 @@ void removeNewLine(char * line) {
 }
 
 char * fileType(const char *name) {
-    char command[50] = "file ";
+    char command[NAME_LENGTH] = "file ";
     strcat(command, name);
     FILE * file = popen(command, "r");
-    char fileInfo[50];
-    fgets(fileInfo, 50, file);
+    char fileInfo[NAME_LENGTH];
+    fgets(fileInfo, NAME_LENGTH, file);
     pclose(file);
     char * fileType = strstr(fileInfo, " ");
     fileType++;
@@ -66,6 +66,7 @@ char * fileType(const char *name) {
 
     return fileType;
 }
+
 /* funcao a completar e a compor*/
 void analyseFile(const char *name, char *file_info)
 {
