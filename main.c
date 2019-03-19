@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <dirent.h>
@@ -66,6 +67,20 @@ char *fileAccess(struct stat *stat_entry)
     return " ";
 }
 
+void fillInfo(const char *name, char *file_info) {
+    char command[50] = "file ";
+    strcat(command, name);
+    FILE * file = popen(command, "r");
+    char line[50];
+    fgets(line, 50, file);
+    pclose(file);
+    printf("%s\n", line);
+    char * newLine = strstr(line, " ");
+    printf("%s\n", ++newLine);
+
+    //guardar esta informação 
+    //fazer o mesmo para os hash's
+}
 /* funcao a completar e a compor*/
 void analyseFile(const char *name, char *file_info)
 {
@@ -81,7 +96,8 @@ void analyseFile(const char *name, char *file_info)
     char modificationDate[TIME_LENGHT];
     strftime(modificationDate, TIME_LENGHT, "%Y-%m-%dT%H:%M:%S", localtime(&stat_entry.st_mtime));
     //file name, file_type, filesize(bytes),file_access  , file permission change, file modification date
-    sprintf(file_info,"%s,%s,%ld,%s,%s,%s", name, fileType(&stat_entry), stat_entry.st_size, fileAccess(&stat_entry), creationDate, modificationDate);
+    fillInfo(name, file_info);
+    //sprintf(file_info,"%s,%s,%ld,%s,%s,%s", name, fileType(&stat_entry), stat_entry.st_size, fileAccess(&stat_entry), creationDate, modificationDate);
 }
 
 void completeVariableStatusStruct(variableStatus *Vstatus, int argc, char **argv)
@@ -117,7 +133,7 @@ void completeVariableStatusStruct(variableStatus *Vstatus, int argc, char **argv
 void printFileInfo(const char *name) {
     char *file_info = malloc(512 * sizeof(char));
     analyseFile(name, file_info);
-    printf("%s\n", file_info);
+    //printf("%s\n", file_info);
     free(file_info);
 }
 
@@ -156,7 +172,15 @@ int readDirectory(char *dirName)
         {
             if ((strcmp(dentry->d_name, dirIgnore1) != 0) && (strcmp(dentry->d_name, dirIgnore2) != 0)) {
                 printFileInfo(name);
-                readDirectory(name);
+
+                pid_t pid = fork();
+                if (pid == 0) {
+                    readDirectory(name);
+                    break;    
+                }
+                else {
+                    wait(NULL);
+                }
             }
         }
     }
