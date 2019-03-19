@@ -31,26 +31,6 @@ typedef struct Number
     int directories;
 } Number;
 
-char *fileType(struct stat *stat_entry)
-{
-    if (S_ISREG(stat_entry->st_mode))
-        return "regular";
-    else if (S_ISDIR(stat_entry->st_mode))
-        return "directory";
-    else if (S_ISCHR(stat_entry->st_mode))
-        return "character special";
-    else if (S_ISBLK(stat_entry->st_mode))
-        return "block special";
-    else if (S_ISFIFO(stat_entry->st_mode))
-        return "fifo";
-    else if (S_ISLNK(stat_entry->st_mode))
-        return "symbolic link";
-    else if (S_ISSOCK(stat_entry->st_mode))
-        return "socket";
-    else
-        return "unknown";
-}
-
 //consultar link para as flags
 //http://pubs.opengroup.org/onlinepubs/7908799/xsh/sysstat.h.html
 char *fileAccess(struct stat *stat_entry)
@@ -67,19 +47,24 @@ char *fileAccess(struct stat *stat_entry)
     return " ";
 }
 
-void fillInfo(const char *name, char *file_info) {
+void removeNewLine(char * line) {
+    char * pos;
+    if ((pos=strchr(line, '\n')) != NULL)
+        *pos = '\0';
+}
+
+char * fileType(const char *name) {
     char command[50] = "file ";
     strcat(command, name);
     FILE * file = popen(command, "r");
-    char line[50];
-    fgets(line, 50, file);
+    char fileInfo[50];
+    fgets(fileInfo, 50, file);
     pclose(file);
-    printf("%s\n", line);
-    char * newLine = strstr(line, " ");
-    printf("%s\n", ++newLine);
+    char * fileType = strstr(fileInfo, " ");
+    fileType++;
+    removeNewLine(fileType);
 
-    //guardar esta informação 
-    //fazer o mesmo para os hash's
+    return fileType;
 }
 /* funcao a completar e a compor*/
 void analyseFile(const char *name, char *file_info)
@@ -96,8 +81,7 @@ void analyseFile(const char *name, char *file_info)
     char modificationDate[TIME_LENGHT];
     strftime(modificationDate, TIME_LENGHT, "%Y-%m-%dT%H:%M:%S", localtime(&stat_entry.st_mtime));
     //file name, file_type, filesize(bytes),file_access  , file permission change, file modification date
-    fillInfo(name, file_info);
-    //sprintf(file_info,"%s,%s,%ld,%s,%s,%s", name, fileType(&stat_entry), stat_entry.st_size, fileAccess(&stat_entry), creationDate, modificationDate);
+    sprintf(file_info,"%s,%s,%ld,%s,%s,%s", name, fileType(name), stat_entry.st_size, fileAccess(&stat_entry), creationDate, modificationDate);
 }
 
 void completeVariableStatusStruct(variableStatus *Vstatus, int argc, char **argv)
@@ -133,7 +117,7 @@ void completeVariableStatusStruct(variableStatus *Vstatus, int argc, char **argv
 void printFileInfo(const char *name) {
     char *file_info = malloc(512 * sizeof(char));
     analyseFile(name, file_info);
-    //printf("%s\n", file_info);
+    printf("%s\n", file_info);
     free(file_info);
 }
 
