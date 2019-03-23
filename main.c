@@ -53,18 +53,18 @@ void removeNewLine(char * line) {
         *pos = '\0';
 }
 
-char * fileType(const char *name) {
-    char command[NAME_LENGTH] = "file ";
+void getFileType(const char *name, char *fileType) {
+    char command[] = "file ";
     strcat(command, name);
     FILE * file = popen(command, "r");
     char fileInfo[NAME_LENGTH];
     fgets(fileInfo, NAME_LENGTH, file);
     pclose(file);
-    char * fileType = strstr(fileInfo, " ");
-    fileType++;
-    removeNewLine(fileType);
+    char * fileTypeCopy = strstr(fileInfo, " ");
+    fileTypeCopy++;
+    removeNewLine(fileTypeCopy);
 
-    return fileType;
+    strcpy(fileType, fileTypeCopy);
 }
 
 /* funcao a completar e a compor*/
@@ -82,7 +82,9 @@ void analyseFile(const char *name, char *file_info)
     char modificationDate[TIME_LENGHT];
     strftime(modificationDate, TIME_LENGHT, "%Y-%m-%dT%H:%M:%S", localtime(&stat_entry.st_mtime));
     //file name, file_type, filesize(bytes),file_access  , file permission change, file modification date
-    sprintf(file_info,"%s,%s,%ld,%s,%s,%s", name, fileType(name), stat_entry.st_size, fileAccess(&stat_entry), creationDate, modificationDate);
+    char * fileType = malloc(NAME_LENGTH * sizeof(char));
+    getFileType(name, fileType);
+    sprintf(file_info,"%s,%s,%ld,%s,%s,%s", name, fileType, stat_entry.st_size, fileAccess(&stat_entry), creationDate, modificationDate);
 }
 
 void completeVariableStatusStruct(variableStatus *Vstatus, int argc, char **argv)
