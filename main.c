@@ -15,6 +15,8 @@
 #define SO_ERROR_NUMBER -1
 #define FILE_INFO_SIZE 512
 #define TIME_LENGHT 20
+#define READ 0
+#define WRITE 1
 
 typedef struct active_variables
 {
@@ -54,17 +56,34 @@ void removeNewLine(char * line) {
 }
 
 void getFileType(const char *name, char *fileType) {
-    char command[] = "file ";
-    strcat(command, name);
-    FILE * file = popen(command, "r");
-    char fileInfo[NAME_LENGTH];
-    fgets(fileInfo, NAME_LENGTH, file);
-    pclose(file);
-    char * fileTypeCopy = strstr(fileInfo, " ");
-    fileTypeCopy++;
-    removeNewLine(fileTypeCopy);
+    int fd[2];
+    pid_t pid;
 
-    strcpy(fileType, fileTypeCopy);
+    if (pipe(fd) < 0) {
+        perror("Pipe Error");
+        exit(1);
+    }
+
+    if ((pid = fork()) < 0) {
+        perror("Fork Error");
+        exit(2);
+    }
+    else if (pid > 0) {
+        close(fd[WRITE]);
+        
+        char fileInfo[NAME_LENGTH];
+        read(fd[READ], fileInfo, NAME_LENGTH);
+        char * fileTypeCopy = strstr(fileInfo, " ");
+        fileTypeCopy++;
+        removeNewLine(fileTypeCopy);
+        strcpy(fileType, fileTypeCopy);
+        wait(NULL);
+    }
+    else {
+        close(fd[READ]);
+        dup2(fd[WRITE], STDOUT_FILENO);
+        execlp("file", "file", name, NULL);
+    }
 }
 
 /* funcao a completar e a compor*/
