@@ -49,124 +49,145 @@ char *fileAccess(struct stat *stat_entry)
     return " ";
 }
 
-void removeNewLine(char * line) {
-    char * pos;
-    if ((pos=strchr(line, '\n')) != NULL)
+void removeNewLine(char *line)
+{
+    char *pos;
+    if ((pos = strchr(line, '\n')) != NULL)
         *pos = '\0';
 }
 
-void md5(const char *name, char *fileType) {
+void md5(const char *name, char *fileHash)
+{
     int fd[2];
     pid_t pid;
 
-    if (pipe(fd) < 0) {
+    if (pipe(fd) < 0)
+    {
         perror("Pipe Error");
         exit(1);
     }
 
-    if ((pid = fork()) < 0) {
+    if ((pid = fork()) < 0)
+    {
         perror("Fork Error");
         exit(2);
     }
-    else if (pid > 0) {
+    else if (pid > 0)
+    {
         close(fd[WRITE]);
         char fileInfo[NAME_LENGTH];
         read(fd[READ], fileInfo, NAME_LENGTH * 100);
-        char * fileTypeCopy = strtok(fileInfo, " ");
-        removeNewLine(fileTypeCopy);
-        strcpy(fileType, fileTypeCopy);
+        char *fileHashCopy = strtok(fileInfo, " ");
+        removeNewLine(fileHashCopy);
+        strcpy(fileHash, fileHashCopy);
         wait(NULL);
     }
-    else {
+    else
+    {
         close(fd[READ]);
         dup2(fd[WRITE], STDOUT_FILENO);
         execlp("md5sum", "md5sum", name, NULL);
     }
 }
 
-void sha1(const char *name, char *fileType) {
+void sha1(const char *name, char *fileHash)
+{
     int fd[2];
     pid_t pid;
 
-    if (pipe(fd) < 0) {
+    if (pipe(fd) < 0)
+    {
         perror("Pipe Error");
         exit(1);
     }
 
-    if ((pid = fork()) < 0) {
+    if ((pid = fork()) < 0)
+    {
         perror("Fork Error");
         exit(2);
     }
-    else if (pid > 0) {
+    else if (pid > 0)
+    {
         close(fd[WRITE]);
         char fileInfo[NAME_LENGTH];
         read(fd[READ], fileInfo, NAME_LENGTH * 100);
-        char * fileTypeCopy = strtok(fileInfo, " ");
-        removeNewLine(fileTypeCopy);
-        strcpy(fileType, fileTypeCopy);
+        char *fileHashCopy = strtok(fileInfo, " ");
+        removeNewLine(fileHashCopy);
+        strcpy(fileHash, fileHashCopy);
         wait(NULL);
     }
-    else {
+    else
+    {
         close(fd[READ]);
         dup2(fd[WRITE], STDOUT_FILENO);
         execlp("sha1sum", "sha1sum", name, NULL);
     }
 }
 
-void sha256(const char *name, char *fileType) {
+void sha256(const char *name, char *fileHash)
+{
     int fd[2];
     pid_t pid;
 
-    if (pipe(fd) < 0) {
+    if (pipe(fd) < 0)
+    {
         perror("Pipe Error");
         exit(1);
     }
 
-    if ((pid = fork()) < 0) {
+    if ((pid = fork()) < 0)
+    {
         perror("Fork Error");
         exit(2);
     }
-    else if (pid > 0) {
+    else if (pid > 0)
+    {
         close(fd[WRITE]);
         char fileInfo[NAME_LENGTH];
         read(fd[READ], fileInfo, NAME_LENGTH * 100);
-        char * fileTypeCopy = strtok(fileInfo, " ");
-        removeNewLine(fileTypeCopy);
-        strcpy(fileType, fileTypeCopy);
+        char *fileHashCopy = strtok(fileInfo, " ");
+        removeNewLine(fileHashCopy);
+        strcpy(fileHash, fileHashCopy);
         wait(NULL);
     }
-    else {
+    else
+    {
         close(fd[READ]);
         dup2(fd[WRITE], STDOUT_FILENO);
         execlp("sha256sum", "sha256sum", name, NULL);
     }
 }
 
-void getFileType(const char *name, char *fileType) {
+void getFileType(const char *name, char *fileType)
+{
     int fd[2];
     pid_t pid;
 
-    if (pipe(fd) < 0) {
+    if (pipe(fd) < 0)
+    {
         perror("Pipe Error");
         exit(1);
     }
 
-    if ((pid = fork()) < 0) {
+    if ((pid = fork()) < 0)
+    {
         perror("Fork Error");
         exit(2);
     }
-    else if (pid > 0) {
+    else if (pid > 0)
+    {
         close(fd[WRITE]);
-        
+
         char fileInfo[NAME_LENGTH];
         read(fd[READ], fileInfo, NAME_LENGTH);
-        char * fileTypeCopy = strstr(fileInfo, " ");
+        char *fileTypeCopy = strstr(fileInfo, " ");
         fileTypeCopy++;
         removeNewLine(fileTypeCopy);
         strcpy(fileType, fileTypeCopy);
         wait(NULL);
     }
-    else {
+    else
+    {
         close(fd[READ]);
         dup2(fd[WRITE], STDOUT_FILENO);
         execlp("file", "file", name, NULL);
@@ -188,25 +209,35 @@ void analyseFile(const char *name, char *file_info)
     char modificationDate[TIME_LENGHT];
     strftime(modificationDate, TIME_LENGHT, "%Y-%m-%dT%H:%M:%S", localtime(&stat_entry.st_mtime));
     //file name, file_type, filesize(bytes),file_access  , file permission change, file modification date
-    char * fileType = malloc(NAME_LENGTH * sizeof(char));
+    char *fileType = malloc(NAME_LENGTH * sizeof(char));
     getFileType(name, fileType);
-    sprintf(file_info,"%s,%s,%ld,%s,%s,%s", name, fileType, stat_entry.st_size, fileAccess(&stat_entry), creationDate, modificationDate);
+    sprintf(file_info, "%s,%s,%ld,%s,%s,%s", name, fileType, stat_entry.st_size, fileAccess(&stat_entry), creationDate, modificationDate);
+
+    if (strcmp(fileType, "directory") != 0)
+    {
+        char *md5sum = malloc(NAME_LENGTH * sizeof(char));
+        md5(name, md5sum);
+        printf("\n\n%s\n\n", md5sum);
+        strcat(file_info, ",");
+        strcat(file_info, md5sum);
+        free(md5sum);
+
+        char *sha1sum = malloc(NAME_LENGTH * sizeof(char));
+        sha1(name, sha1sum);
+        printf("\n\n%s\n\n", sha1sum);
+        strcat(file_info, ",");
+        strcat(file_info, sha1sum);
+        free(sha1sum);
+
+        char *sha256sum = malloc(NAME_LENGTH * sizeof(char));
+        sha256(name, sha256sum);
+        printf("\n\n%s\n\n", sha256sum);
+        strcat(file_info, ",");
+        strcat(file_info, sha256sum);
+        free(sha256sum);
+    }
+
     free(fileType);
-
-    char * md5sum = malloc(NAME_LENGTH * sizeof(char));
-    md5(name, md5sum);
-    printf("\n\n%s\n\n", md5sum);
-    free(md5sum);
-
-    char * sha1sum = malloc(NAME_LENGTH * sizeof(char));
-    sha1(name, sha1sum);
-    printf("\n\n%s\n\n", sha1sum);
-    free(sha1sum);
-
-    char * sha256sum = malloc(NAME_LENGTH * sizeof(char));
-    sha256(name, sha256sum);
-    printf("\n\n%s\n\n", sha256sum);
-    free(sha256sum);
 }
 
 void completeVariableStatusStruct(variableStatus *Vstatus, int argc, char **argv)
@@ -239,8 +270,9 @@ void completeVariableStatusStruct(variableStatus *Vstatus, int argc, char **argv
     }
 }
 
-void printFileInfo(const char *name) {
-    char *file_info = malloc(512 * sizeof(char));
+void printFileInfo(const char *name)
+{
+    char *file_info = malloc(1024 * sizeof(char));
     analyseFile(name, file_info);
     printf("%s\n", file_info);
     free(file_info);
@@ -279,15 +311,18 @@ int readDirectory(char *dirName)
         }
         else if (S_ISDIR(stat_entry.st_mode))
         {
-            if ((strcmp(dentry->d_name, dirIgnore1) != 0) && (strcmp(dentry->d_name, dirIgnore2) != 0)) {
+            if ((strcmp(dentry->d_name, dirIgnore1) != 0) && (strcmp(dentry->d_name, dirIgnore2) != 0))
+            {
                 printFileInfo(name);
 
                 pid_t pid = fork();
-                if (pid == 0) {
+                if (pid == 0)
+                {
                     readDirectory(name);
-                    break;    
+                    break;
                 }
-                else {
+                else
+                {
                     wait(NULL);
                 }
             }
