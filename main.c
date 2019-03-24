@@ -217,21 +217,18 @@ void analyseFile(const char *name, char *file_info)
     {
         char *md5sum = malloc(NAME_LENGTH * sizeof(char));
         md5(name, md5sum);
-        printf("\n\n%s\n\n", md5sum);
         strcat(file_info, ",");
         strcat(file_info, md5sum);
         free(md5sum);
 
         char *sha1sum = malloc(NAME_LENGTH * sizeof(char));
         sha1(name, sha1sum);
-        printf("\n\n%s\n\n", sha1sum);
         strcat(file_info, ",");
         strcat(file_info, sha1sum);
         free(sha1sum);
 
         char *sha256sum = malloc(NAME_LENGTH * sizeof(char));
         sha256(name, sha256sum);
-        printf("\n\n%s\n\n", sha256sum);
         strcat(file_info, ",");
         strcat(file_info, sha256sum);
         free(sha256sum);
