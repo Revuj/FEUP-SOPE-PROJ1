@@ -33,6 +33,9 @@ typedef struct Number
     int directories;
 } Number;
 
+variableStatus VStatus;
+Number trackfileAndDir;
+
 //consultar link para as flags
 //http://pubs.opengroup.org/onlinepubs/7908799/xsh/sysstat.h.html
 char *fileAccess(struct stat *stat_entry)
@@ -340,12 +343,8 @@ int main(int argc, char **argv, char **envp)
     //     fprintf(stderr, "Utilitario invalido\n");
     // }
 
-    variableStatus VStatus;
     memset(&VStatus, 0, sizeof(variableStatus));
-
-    Number trackfileAndDir;
     memset(&trackfileAndDir, 0, sizeof(Number));
-
     completeVariableStatusStruct(&VStatus, argc, argv);
 
     printf("-r: %d\n", VStatus.analise_files);
