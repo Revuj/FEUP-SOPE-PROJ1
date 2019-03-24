@@ -197,6 +197,27 @@ void getFileType(const char *name, char *fileType)
     }
 }
 
+void getHashes(const char *name, char *file_info)
+{
+    char *md5sum = malloc(NAME_LENGTH * sizeof(char));
+    md5(name, md5sum);
+    strcat(file_info, ",");
+    strcat(file_info, md5sum);
+    free(md5sum);
+
+    char *sha1sum = malloc(NAME_LENGTH * sizeof(char));
+    sha1(name, sha1sum);
+    strcat(file_info, ",");
+    strcat(file_info, sha1sum);
+    free(sha1sum);
+
+    char *sha256sum = malloc(NAME_LENGTH * sizeof(char));
+    sha256(name, sha256sum);
+    strcat(file_info, ",");
+    strcat(file_info, sha256sum);
+    free(sha256sum);
+}
+
 /* funcao a completar e a compor*/
 void analyseFile(const char *name, char *file_info)
 {
@@ -216,26 +237,9 @@ void analyseFile(const char *name, char *file_info)
     getFileType(name, fileType);
     sprintf(file_info, "%s,%s,%ld,%s,%s,%s", name, fileType, stat_entry.st_size, fileAccess(&stat_entry), creationDate, modificationDate);
 
-    if (strcmp(fileType, "directory") != 0)
-    {
-        char *md5sum = malloc(NAME_LENGTH * sizeof(char));
-        md5(name, md5sum);
-        strcat(file_info, ",");
-        strcat(file_info, md5sum);
-        free(md5sum);
-
-        char *sha1sum = malloc(NAME_LENGTH * sizeof(char));
-        sha1(name, sha1sum);
-        strcat(file_info, ",");
-        strcat(file_info, sha1sum);
-        free(sha1sum);
-
-        char *sha256sum = malloc(NAME_LENGTH * sizeof(char));
-        sha256(name, sha256sum);
-        strcat(file_info, ",");
-        strcat(file_info, sha256sum);
-        free(sha256sum);
-    }
+    if (VStatus.digit_print) // "-h" was input
+        if (strcmp(fileType, "directory") != 0)
+            getHashes(name, file_info);
 
     free(fileType);
 }
@@ -349,9 +353,7 @@ int main(int argc, char **argv, char **envp)
 
     printf("-r: %d\n", VStatus.analise_files);
     printf("-h: %d\n", VStatus.digit_print);
-
     printf("-o: %d\n", VStatus.save_in_file);
-
     printf("-v: %d\n", VStatus.logfile);
 
     char *enviro = getenv("LOGFILENAME");
@@ -362,11 +364,11 @@ int main(int argc, char **argv, char **envp)
 
     if (VStatus.analise_files) // "-r" was input
     {
-        return readDirectory(argv[2]);
+        return readDirectory(argv[argc - 1]);
     }
     else if (argc == 2) // only 1 file to read
     {
-        printFileInfo(argv[1]);
+        printFileInfo(argv[argc - 1]);
     }
 
     return 0;
