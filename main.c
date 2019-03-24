@@ -17,6 +17,8 @@
 #define TIME_LENGHT 20
 #define READ 0
 #define WRITE 1
+#define PIPE_ERROR_RETURN -1
+#define FORK_ERROR_RETURN -1
 
 typedef struct active_variables
 {
@@ -33,8 +35,16 @@ typedef struct Number
     int directories;
 } Number;
 
+typedef struct algorithms
+{
+    int md5;
+    int sha1;
+    int sha256;
+} Algorithms;
+
 variableStatus VStatus;
 Number trackfileAndDir;
+Algorithms algorithmStatus;
 
 //consultar link para as flags
 //http://pubs.opengroup.org/onlinepubs/7908799/xsh/sysstat.h.html
@@ -59,23 +69,21 @@ void removeNewLine(char *line)
         *pos = '\0';
 }
 
-void md5(const char *name, char *fileHash)
+void popenAlgorithm(const char *name, char *fileHash, char * algorithm)
 {
+
     int fd[2];
     pid_t pid;
 
-    if (pipe(fd) < 0)
+    if (pipe(fd) == PIPE_ERROR_RETURN)
     {
         perror("Pipe Error");
         exit(1);
     }
 
-    if ((pid = fork()) < 0)
-    {
-        perror("Fork Error");
-        exit(2);
-    }
-    else if (pid > 0)
+    pid = fork();
+
+    if (pid > 0) // pai
     {
         close(fd[WRITE]);
         char fileInfo[NAME_LENGTH];
@@ -85,81 +93,120 @@ void md5(const char *name, char *fileHash)
         strcpy(fileHash, fileHashCopy);
         wait(NULL);
     }
-    else
+    else if (pid == FORK_ERROR_RETURN) //erro
     {
-        close(fd[READ]);
-        dup2(fd[WRITE], STDOUT_FILENO);
-        execlp("md5sum", "md5sum", name, NULL);
-    }
-}
-
-void sha1(const char *name, char *fileHash)
-{
-    int fd[2];
-    pid_t pid;
-
-    if (pipe(fd) < 0)
-    {
-        perror("Pipe Error");
-        exit(1);
-    }
-
-    if ((pid = fork()) < 0)
-    {
-        perror("Fork Error");
+        perror("Fork error");
         exit(2);
     }
-    else if (pid > 0)
-    {
-        close(fd[WRITE]);
-        char fileInfo[NAME_LENGTH];
-        read(fd[READ], fileInfo, NAME_LENGTH * 100);
-        char *fileHashCopy = strtok(fileInfo, " ");
-        removeNewLine(fileHashCopy);
-        strcpy(fileHash, fileHashCopy);
-        wait(NULL);
-    }
-    else
+    else //filho
     {
         close(fd[READ]);
         dup2(fd[WRITE], STDOUT_FILENO);
-        execlp("sha1sum", "sha1sum", name, NULL);
+        execlp(algorithm, algorithm, name, NULL);
     }
 }
 
-void sha256(const char *name, char *fileHash)
-{
-    int fd[2];
-    pid_t pid;
+// void md5(const char *name, char *fileHash)
+// {
+//     int fd[2];
+//     pid_t pid;
 
-    if (pipe(fd) < 0)
-    {
-        perror("Pipe Error");
-        exit(1);
-    }
+//     if (pipe(fd) < 0)
+//     {
+//         perror("Pipe Error");
+//         exit(1);
+//     }
 
-    if ((pid = fork()) < 0)
-    {
-        perror("Fork Error");
-        exit(2);
-    }
-    else if (pid > 0)
-    {
-        close(fd[WRITE]);
-        char fileInfo[NAME_LENGTH];
-        read(fd[READ], fileInfo, NAME_LENGTH * 100);
-        char *fileHashCopy = strtok(fileInfo, " ");
-        removeNewLine(fileHashCopy);
-        strcpy(fileHash, fileHashCopy);
-        wait(NULL);
-    }
-    else
-    {
-        close(fd[READ]);
-        dup2(fd[WRITE], STDOUT_FILENO);
-        execlp("sha256sum", "sha256sum", name, NULL);
-    }
-}
+//     if ((pid = fork()) < 0)
+//     {
+//         perror("Fork Error");
+//         exit(2);
+//     }
+//     else if (pid > 0)
+//     {
+//         close(fd[WRITE]);
+//         char fileInfo[NAME_LENGTH];
+//         read(fd[READ], fileInfo, NAME_LENGTH * 100);
+//         char *fileHashCopy = strtok(fileInfo, " ");
+//         removeNewLine(fileHashCopy);
+//         strcpy(fileHash, fileHashCopy);
+//         wait(NULL);
+//     }
+//     else
+//     {
+//         close(fd[READ]);
+//         dup2(fd[WRITE], STDOUT_FILENO);
+//         execlp("md5sum", "md5sum", name, NULL);
+//     }
+// }
+
+// void sha1(const char *name, char *fileHash)
+// {
+//     int fd[2];
+//     pid_t pid;
+
+//     if (pipe(fd) < 0)
+//     {
+//         perror("Pipe Error");
+//         exit(1);
+//     }
+
+//     if ((pid = fork()) < 0)
+//     {
+//         perror("Fork Error");
+//         exit(2);
+//     }
+//     else if (pid > 0)
+//     {
+//         close(fd[WRITE]);
+//         char fileInfo[NAME_LENGTH];
+//         read(fd[READ], fileInfo, NAME_LENGTH * 100);
+//         char *fileHashCopy = strtok(fileInfo, " ");
+//         removeNewLine(fileHashCopy);
+//         strcpy(fileHash, fileHashCopy);
+//         wait(NULL);
+//     }
+//     else
+//     {
+//         close(fd[READ]);
+//         dup2(fd[WRITE], STDOUT_FILENO);
+//         execlp("sha1sum", "sha1sum", name, NULL);
+//     }
+// }
+
+// void sha256(const char *name, char *fileHash)
+// {
+//     int fd[2];
+//     pid_t pid;
+
+//     if (pipe(fd) < 0)
+//     {
+//         perror("Pipe Error");
+//         exit(1);
+//     }
+
+//     if ((pid = fork()) < 0)
+//     {
+//         perror("Fork Error");
+//         exit(2);
+//     }
+//     else if (pid > 0)
+//     {
+//         close(fd[WRITE]);
+//         char fileInfo[NAME_LENGTH];
+//         read(fd[READ], fileInfo, NAME_LENGTH * 100);
+//         char *fileHashCopy = strtok(fileInfo, " ");
+//         removeNewLine(fileHashCopy);
+//         strcpy(fileHash, fileHashCopy);
+//         wait(NULL);
+//     }
+//     else
+//     {
+//         close(fd[READ]);
+//         dup2(fd[WRITE], STDOUT_FILENO);
+//         execlp("sha256sum", "sha256sum", name, NULL);
+//     }
+// }
 
 void getFileType(const char *name, char *fileType)
 {
@@ -199,23 +246,32 @@ void getFileType(const char *name, char *fileType)
 
 void getHashes(const char *name, char *file_info)
 {
-    char *md5sum = malloc(NAME_LENGTH * sizeof(char));
-    md5(name, md5sum);
-    strcat(file_info, ",");
-    strcat(file_info, md5sum);
-    free(md5sum);
+    if (algorithmStatus.md5)
+    {
+        char *md5sum = malloc(NAME_LENGTH * sizeof(char));
+        popenAlgorithm(name, md5sum,"md5sum");
+        strcat(file_info, ",");
+        strcat(file_info, md5sum);
+        free(md5sum);
+    }
 
-    char *sha1sum = malloc(NAME_LENGTH * sizeof(char));
-    sha1(name, sha1sum);
-    strcat(file_info, ",");
-    strcat(file_info, sha1sum);
-    free(sha1sum);
+    if (algorithmStatus.sha1)
+    {
+        char *sha1sum = malloc(NAME_LENGTH * sizeof(char));
+        popenAlgorithm(name, sha1sum,"sha1sum");
+        strcat(file_info, ",");
+        strcat(file_info, sha1sum);
+        free(sha1sum);
+    }
 
-    char *sha256sum = malloc(NAME_LENGTH * sizeof(char));
-    sha256(name, sha256sum);
-    strcat(file_info, ",");
-    strcat(file_info, sha256sum);
-    free(sha256sum);
+    if (algorithmStatus.sha256)
+    {
+        char *sha256sum = malloc(NAME_LENGTH * sizeof(char));
+        popenAlgorithm(name, sha256sum,"sha256sum");
+        strcat(file_info, ",");
+        strcat(file_info, sha256sum);
+        free(sha256sum);
+    }
 }
 
 /* funcao a completar e a compor*/
@@ -272,6 +328,32 @@ void completeVariableStatusStruct(variableStatus *Vstatus, int argc, char **argv
             Vstatus->logfile = 1;
         }
     }
+}
+
+void completeAlgorithmStatus(int argc, char **argv)
+{
+
+    if (argc <= 1)
+    {
+        return;
+    }
+
+    for (int i = 1; i < argc; i++)
+    {
+        if (strstr(argv[i], "md5") != NULL)
+        {
+            algorithmStatus.md5 = 1;
+        }
+        if (strstr(argv[i], "sha1") != NULL)
+        {
+            algorithmStatus.sha1 = 1;
+        }
+        if (strstr(argv[i], "sha256") != NULL)
+        {
+            algorithmStatus.sha256 = 1;
+        }
+    }
+    return;
 }
 
 void printFileInfo(const char *name)
@@ -349,12 +431,22 @@ int main(int argc, char **argv, char **envp)
 
     memset(&VStatus, 0, sizeof(variableStatus));
     memset(&trackfileAndDir, 0, sizeof(Number));
+    memset(&algorithmStatus, 0, sizeof(Algorithms));
     completeVariableStatusStruct(&VStatus, argc, argv);
 
     printf("-r: %d\n", VStatus.analise_files);
     printf("-h: %d\n", VStatus.digit_print);
     printf("-o: %d\n", VStatus.save_in_file);
     printf("-v: %d\n", VStatus.logfile);
+
+    if (VStatus.digit_print)
+    {
+        completeAlgorithmStatus(argc, argv);
+    }
+
+    printf("md5    : %d\n", algorithmStatus.md5);
+    printf("sha1   : %d\n", algorithmStatus.sha1);
+    printf("sha256 : %d\n", algorithmStatus.sha256);
 
     char *enviro = getenv("LOGFILENAME");
     if (enviro != NULL)
