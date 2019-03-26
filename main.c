@@ -106,108 +106,6 @@ void popenAlgorithm(const char *name, char *fileHash, char * algorithm)
     }
 }
 
-// void md5(const char *name, char *fileHash)
-// {
-//     int fd[2];
-//     pid_t pid;
-
-//     if (pipe(fd) < 0)
-//     {
-//         perror("Pipe Error");
-//         exit(1);
-//     }
-
-//     if ((pid = fork()) < 0)
-//     {
-//         perror("Fork Error");
-//         exit(2);
-//     }
-//     else if (pid > 0)
-//     {
-//         close(fd[WRITE]);
-//         char fileInfo[NAME_LENGTH];
-//         read(fd[READ], fileInfo, NAME_LENGTH * 100);
-//         char *fileHashCopy = strtok(fileInfo, " ");
-//         removeNewLine(fileHashCopy);
-//         strcpy(fileHash, fileHashCopy);
-//         wait(NULL);
-//     }
-//     else
-//     {
-//         close(fd[READ]);
-//         dup2(fd[WRITE], STDOUT_FILENO);
-//         execlp("md5sum", "md5sum", name, NULL);
-//     }
-// }
-
-// void sha1(const char *name, char *fileHash)
-// {
-//     int fd[2];
-//     pid_t pid;
-
-//     if (pipe(fd) < 0)
-//     {
-//         perror("Pipe Error");
-//         exit(1);
-//     }
-
-//     if ((pid = fork()) < 0)
-//     {
-//         perror("Fork Error");
-//         exit(2);
-//     }
-//     else if (pid > 0)
-//     {
-//         close(fd[WRITE]);
-//         char fileInfo[NAME_LENGTH];
-//         read(fd[READ], fileInfo, NAME_LENGTH * 100);
-//         char *fileHashCopy = strtok(fileInfo, " ");
-//         removeNewLine(fileHashCopy);
-//         strcpy(fileHash, fileHashCopy);
-//         wait(NULL);
-//     }
-//     else
-//     {
-//         close(fd[READ]);
-//         dup2(fd[WRITE], STDOUT_FILENO);
-//         execlp("sha1sum", "sha1sum", name, NULL);
-//     }
-// }
-
-// void sha256(const char *name, char *fileHash)
-// {
-//     int fd[2];
-//     pid_t pid;
-
-//     if (pipe(fd) < 0)
-//     {
-//         perror("Pipe Error");
-//         exit(1);
-//     }
-
-//     if ((pid = fork()) < 0)
-//     {
-//         perror("Fork Error");
-//         exit(2);
-//     }
-//     else if (pid > 0)
-//     {
-//         close(fd[WRITE]);
-//         char fileInfo[NAME_LENGTH];
-//         read(fd[READ], fileInfo, NAME_LENGTH * 100);
-//         char *fileHashCopy = strtok(fileInfo, " ");
-//         removeNewLine(fileHashCopy);
-//         strcpy(fileHash, fileHashCopy);
-//         wait(NULL);
-//     }
-//     else
-//     {
-//         close(fd[READ]);
-//         dup2(fd[WRITE], STDOUT_FILENO);
-//         execlp("sha256sum", "sha256sum", name, NULL);
-//     }
-// }
-
 void getFileType(const char *name, char *fileType)
 {
     int fd[2];
@@ -330,11 +228,11 @@ void completeVariableStatusStruct(variableStatus *Vstatus, int argc, char **argv
     }
 }
 
-void completeAlgorithmStatus(int argc, char **argv)
+int completeAlgorithmStatus(int argc, char **argv)
 {
 
     if (argc <= 2){
-        return;
+        return -1;
     }
 
     int i=1;
@@ -347,15 +245,60 @@ void completeAlgorithmStatus(int argc, char **argv)
 
     i++;
 
-    if (strstr(argv[i], "md5") != NULL){
-        algorithmStatus.md5 = 1;
+    for(int j=0;j<strlen(argv[i]);j++){
+        if(argv[i][j] == ',' && j==0){
+            printf("Invalid algorithms\n");
+            return -1;
+        }
+        if(argv[i][j] == ',' && j==strlen(argv[i])-1){
+            printf("Invalid algorithms\n");
+            return -1;
+        }
     }
-    if (strstr(argv[i], "sha1") != NULL){
-        algorithmStatus.sha1 = 1;
+
+    char *token = strtok(argv[i], ",");
+
+    if(token == NULL){
+        printf("%s\n",token);
+
+        if (strcmp(argv[i], "md5") == 0){
+            algorithmStatus.md5 = 1;
+        }
+        else if (strcmp(argv[i], "sha1") == 0){
+            algorithmStatus.sha1 = 1;
+        }
+        else if (strcmp(argv[i], "sha256") == 0){
+            algorithmStatus.sha256 = 1;
+        }
+
+        else {
+            printf("Invalid algorithms\n");
+            return -1;
+        }
     }
-    if (strstr(argv[i], "sha256") != NULL){
-        algorithmStatus.sha256 = 1;
+
+    while( token != NULL ) {
+        printf("%s\n",token);
+
+        if (strcmp(token, "md5") == 0){
+            algorithmStatus.md5 = 1;
+        }
+        else if (strcmp(token, "sha1") == 0){
+            algorithmStatus.sha1 = 1;
+        }
+        else if (strcmp(token, "sha256") == 0){
+            algorithmStatus.sha256 = 1;
+        }
+
+        else {
+            printf("Invalid algorithms\n");
+            return -1;
+        }
+
+        token = strtok(NULL, ",");
     }
+
+    return 0;
 }
 
 void printFileInfo(const char *name)
@@ -434,7 +377,8 @@ int main(int argc, char **argv, char **envp)
     // printf("-v: %d\n", VStatus.logfile);
 
     if (VStatus.digit_print){
-        completeAlgorithmStatus(argc, argv);
+        if(completeAlgorithmStatus(argc, argv)<0)
+            return 0;
     }
 
     printf("md5    : %d\n", algorithmStatus.md5);
