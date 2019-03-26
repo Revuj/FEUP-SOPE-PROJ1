@@ -333,27 +333,29 @@ void completeVariableStatusStruct(variableStatus *Vstatus, int argc, char **argv
 void completeAlgorithmStatus(int argc, char **argv)
 {
 
-    if (argc <= 1)
-    {
+    if (argc <= 2){
         return;
     }
 
-    for (int i = 1; i < argc; i++)
-    {
-        if (strstr(argv[i], "md5") != NULL)
-        {
-            algorithmStatus.md5 = 1;
-        }
-        if (strstr(argv[i], "sha1") != NULL)
-        {
-            algorithmStatus.sha1 = 1;
-        }
-        if (strstr(argv[i], "sha256") != NULL)
-        {
-            algorithmStatus.sha256 = 1;
+    int i=1;
+
+    for(; i < argc; i++){
+        if (strstr(argv[i], "-h") != NULL){
+            break;
         }
     }
-    return;
+
+    i++;
+
+    if (strstr(argv[i], "md5") != NULL){
+        algorithmStatus.md5 = 1;
+    }
+    if (strstr(argv[i], "sha1") != NULL){
+        algorithmStatus.sha1 = 1;
+    }
+    if (strstr(argv[i], "sha256") != NULL){
+        algorithmStatus.sha256 = 1;
+    }
 }
 
 void printFileInfo(const char *name)
@@ -373,8 +375,7 @@ int readDirectory(char *dirName)
     struct dirent *dentry;
     char *name = malloc(sizeof(char) * NAME_LENGTH);
 
-    if ((dir = opendir(dirName)) == NULL)
-    { //directory was open unsucessfuly
+    if ((dir = opendir(dirName)) == NULL){ //directory was open unsucessfuly
         perror(dirName);
         return 1;
     }
@@ -422,25 +423,17 @@ int readDirectory(char *dirName)
 
 int main(int argc, char **argv, char **envp)
 {
-    //char * utilitario = "foresinc";
-    //char *pathName = ".";
-    // if (strcmp(argv[0], utilitario) != 0)
-    // {
-    //     fprintf(stderr, "Utilitario invalido\n");
-    // }
-
     memset(&VStatus, 0, sizeof(variableStatus));
     memset(&trackfileAndDir, 0, sizeof(Number));
     memset(&algorithmStatus, 0, sizeof(Algorithms));
     completeVariableStatusStruct(&VStatus, argc, argv);
 
-    printf("-r: %d\n", VStatus.analise_files);
-    printf("-h: %d\n", VStatus.digit_print);
-    printf("-o: %d\n", VStatus.save_in_file);
-    printf("-v: %d\n", VStatus.logfile);
+    // printf("-r: %d\n", VStatus.analise_files);
+    // printf("-h: %d\n", VStatus.digit_print);
+    // printf("-o: %d\n", VStatus.save_in_file);
+    // printf("-v: %d\n", VStatus.logfile);
 
-    if (VStatus.digit_print)
-    {
+    if (VStatus.digit_print){
         completeAlgorithmStatus(argc, argv);
     }
 
