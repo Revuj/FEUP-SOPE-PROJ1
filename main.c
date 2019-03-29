@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <time.h>
+#include <ctype.h>
 
 #define IS_BIT_SET(var, pos) ((var) & (1 << (pos)))
 
@@ -20,8 +21,7 @@
 #define PIPE_ERROR_RETURN -1
 #define FORK_ERROR_RETURN -1
 
-typedef struct active_variables
-{
+typedef struct active_variables {
     int analise_files; //-r
     int digit_print;   // -h
     int save_in_file;  // -o
@@ -29,14 +29,12 @@ typedef struct active_variables
 } variableStatus;
 
 /*to keep track of the number of directories and files*/
-typedef struct Number
-{
+typedef struct Number {
     int files;
     int directories;
 } Number;
 
-typedef struct algorithms
-{
+typedef struct algorithms {
     int md5;
     int sha1;
     int sha256;
@@ -45,6 +43,58 @@ typedef struct algorithms
 variableStatus VStatus;
 Number trackfileAndDir;
 Algorithms algorithmStatus;
+
+void completeVariableStatusStruct(int argc, char **argv) {
+    int option;
+    char *h_args = NULL;
+    char *token;
+    size_t i = 0;
+
+    opterr = 0;
+
+    while ((option = getopt (argc, argv,"h:ro:v")) != -1)
+        switch (option){
+            case 'r':
+                VStatus.analise_files=1;
+                break;
+            case 'v':
+                VStatus.logfile=1;
+                break;
+            case 'h':
+                VStatus.digit_print=1;
+                h_args=optarg;
+                token = strsep(&h_args, ",");
+                while (token != NULL) {
+                    if (!strcmp(token, "md5") && algorithmStatus.md5 == 0)
+                        algorithmStatus.md5 = 1;
+                    else if (!strcmp(token, "sha1") && algorithmStatus.sha1 == 0)
+                        algorithmStatus.sha1 = 1;
+                    else if (!strcmp(token, "sha256") && algorithmStatus.sha256 == 0)
+                        algorithmStatus.sha256 = 1;
+                    else {
+                        printf("Wrong values entered for option -h\n");
+                        exit(1);
+                    }
+                    token = strsep(&h_args, ",");
+                    i++;
+                }
+
+                if (i > 3) {
+                    printf("Too many values entered for option -a\n");
+                    exit(1);
+                }
+            case 'o':
+                VStatus.save_in_file=1;
+                break;
+            case '?':
+                if (optopt == 'h' || optopt == 'o')
+                    fprintf (stderr, "Option -%c requires an argument.\n", optopt);
+                else fprintf (stderr, "Unknown option `-%c'.\n", optopt);
+                exit(1);
+            default:
+                exit(1);
+        }
+}
 
 //consultar link para as flags
 //http://pubs.opengroup.org/onlinepubs/7908799/xsh/sysstat.h.html
@@ -58,33 +108,28 @@ char *fileAccess(struct stat *stat_entry)
         return "w";
     else if ((stat_entry->st_mode & S_IXUSR) == S_IXUSR)
         return "x";
-
     return " ";
 }
 
-void removeNewLine(char *line)
-{
+void removeNewLine(char *line) {
     char *pos;
     if ((pos = strchr(line, '\n')) != NULL)
         *pos = '\0';
 }
 
-void popenAlgorithm(const char *name, char *fileHash, char * algorithm)
-{
+void popenAlgorithm(const char *name, char *fileHash, char * algorithm) {
 
     int fd[2];
     pid_t pid;
 
-    if (pipe(fd) == PIPE_ERROR_RETURN)
-    {
+    if (pipe(fd) == PIPE_ERROR_RETURN) {
         perror("Pipe Error");
         exit(1);
     }
 
     pid = fork();
 
-    if (pid > 0) // pai
-    {
+    if (pid > 0) {
         close(fd[WRITE]);
         char fileInfo[NAME_LENGTH];
         read(fd[READ], fileInfo, NAME_LENGTH * 100);
@@ -93,39 +138,32 @@ void popenAlgorithm(const char *name, char *fileHash, char * algorithm)
         strcpy(fileHash, fileHashCopy);
         wait(NULL);
     }
-    else if (pid == FORK_ERROR_RETURN) //erro
-    {
+    else if (pid == FORK_ERROR_RETURN) {
         perror("Fork error");
         exit(2);
     }
-    else //filho
-    {
+    else {
         close(fd[READ]);
         dup2(fd[WRITE], STDOUT_FILENO);
         execlp(algorithm, algorithm, name, NULL);
     }
 }
 
-void getFileType(const char *name, char *fileType)
-{
+void getFileType(const char *name, char *fileType) {
     int fd[2];
     pid_t pid;
 
-    if (pipe(fd) < 0)
-    {
+    if (pipe(fd) < 0) {
         perror("Pipe Error");
         exit(1);
     }
 
-    if ((pid = fork()) < 0)
-    {
+    if ((pid = fork()) < 0) {
         perror("Fork Error");
         exit(2);
     }
-    else if (pid > 0)
-    {
+    else if (pid > 0) {
         close(fd[WRITE]);
-
         char fileInfo[NAME_LENGTH];
         read(fd[READ], fileInfo, NAME_LENGTH);
         char *fileTypeCopy = strstr(fileInfo, " ");
@@ -134,18 +172,16 @@ void getFileType(const char *name, char *fileType)
         strcpy(fileType, fileTypeCopy);
         wait(NULL);
     }
-    else
-    {
+    else {
         close(fd[READ]);
         dup2(fd[WRITE], STDOUT_FILENO);
         execlp("file", "file", name, NULL);
     }
 }
 
-void getHashes(const char *name, char *file_info)
-{
-    if (algorithmStatus.md5)
-    {
+void getHashes(const char *name, char *file_info) {
+    
+    if (algorithmStatus.md5) {
         char *md5sum = malloc(NAME_LENGTH * sizeof(char));
         popenAlgorithm(name, md5sum,"md5sum");
         strcat(file_info, ",");
@@ -153,8 +189,7 @@ void getHashes(const char *name, char *file_info)
         free(md5sum);
     }
 
-    if (algorithmStatus.sha1)
-    {
+    if (algorithmStatus.sha1) {
         char *sha1sum = malloc(NAME_LENGTH * sizeof(char));
         popenAlgorithm(name, sha1sum,"sha1sum");
         strcat(file_info, ",");
@@ -162,8 +197,7 @@ void getHashes(const char *name, char *file_info)
         free(sha1sum);
     }
 
-    if (algorithmStatus.sha256)
-    {
+    if (algorithmStatus.sha256) {
         char *sha256sum = malloc(NAME_LENGTH * sizeof(char));
         popenAlgorithm(name, sha256sum,"sha256sum");
         strcat(file_info, ",");
@@ -173,230 +207,104 @@ void getHashes(const char *name, char *file_info)
 }
 
 /* funcao a completar e a compor*/
-void analyseFile(const char *name, char *file_info)
+void analyseFile(char *name, char *file_info)
 {
     struct stat stat_entry;
-    if (stat(name, &stat_entry) == SO_ERROR_NUMBER)
-    {
+    if (stat(name, &stat_entry) == SO_ERROR_NUMBER) {
         perror("Error in analyseFile while trying to retrive information about file");
-        exit(1);
+        exit(-1);
     }
+
     char creationDate[TIME_LENGHT];
     strftime(creationDate, TIME_LENGHT, "%Y-%m-%dT%H:%M:%S", localtime(&stat_entry.st_ctime));
 
     char modificationDate[TIME_LENGHT];
     strftime(modificationDate, TIME_LENGHT, "%Y-%m-%dT%H:%M:%S", localtime(&stat_entry.st_mtime));
+    
     //file name, file_type, filesize(bytes),file_access  , file permission change, file modification date
     char *fileType = malloc(NAME_LENGTH * sizeof(char));
     getFileType(name, fileType);
     sprintf(file_info, "%s,%s,%ld,%s,%s,%s", name, fileType, stat_entry.st_size, fileAccess(&stat_entry), creationDate, modificationDate);
 
     if (VStatus.digit_print) // "-h" was input
-        if (strcmp(fileType, "directory") != 0)
-            getHashes(name, file_info);
+        getHashes(name, file_info);
 
     free(fileType);
 }
 
-void completeVariableStatusStruct(variableStatus *Vstatus, int argc, char **argv)
-{
-
-    if (Vstatus == NULL || argc <= 1)
-    {
-        return;
-    }
-
-    for (int i = 1; i < argc; i++)
-    {
-
-        if (strstr(argv[i], "-r") != NULL)
-        {
-            Vstatus->analise_files = 1;
-        }
-        else if (strstr(argv[i], "-h") != NULL)
-        {
-            Vstatus->digit_print = 1;
-        }
-        else if (strstr(argv[i], "-o") != NULL)
-        {
-            Vstatus->save_in_file = 1;
-        }
-        else if (strstr(argv[i], "-v") != NULL)
-        {
-            Vstatus->logfile = 1;
-        }
-    }
-}
-
-int completeAlgorithmStatus(int argc, char **argv)
-{
-
-    if (argc <= 2){
-        return -1;
-    }
-
-    int i=1;
-
-    for(; i < argc; i++){
-        if (strstr(argv[i], "-h") != NULL){
-            break;
-        }
-    }
-
-    i++;
-
-    for(int j=0;j<strlen(argv[i]);j++){
-        if(argv[i][j] == ',' && j==0){
-            printf("Invalid algorithms\n");
-            return -1;
-        }
-        if(argv[i][j] == ',' && j==strlen(argv[i])-1){
-            printf("Invalid algorithms\n");
-            return -1;
-        }
-    }
-
-    char *token = strtok(argv[i], ",");
-
-    if(token == NULL){
-        printf("%s\n",token);
-
-        if (strcmp(argv[i], "md5") == 0){
-            algorithmStatus.md5 = 1;
-        }
-        else if (strcmp(argv[i], "sha1") == 0){
-            algorithmStatus.sha1 = 1;
-        }
-        else if (strcmp(argv[i], "sha256") == 0){
-            algorithmStatus.sha256 = 1;
-        }
-
-        else {
-            printf("Invalid algorithms\n");
-            return -1;
-        }
-    }
-
-    while( token != NULL ) {
-        printf("%s\n",token);
-
-        if (strcmp(token, "md5") == 0){
-            algorithmStatus.md5 = 1;
-        }
-        else if (strcmp(token, "sha1") == 0){
-            algorithmStatus.sha1 = 1;
-        }
-        else if (strcmp(token, "sha256") == 0){
-            algorithmStatus.sha256 = 1;
-        }
-
-        else {
-            printf("Invalid algorithms\n");
-            return -1;
-        }
-
-        token = strtok(NULL, ",");
-    }
-
-    return 0;
-}
-
-void printFileInfo(const char *name)
-{
+void printFileInfo(char *name) {
     char *file_info = malloc(1024 * sizeof(char));
     analyseFile(name, file_info);
     printf("%s\n", file_info);
     free(file_info);
 }
 
-int readDirectory(char *dirName)
-{
+void readDirectory(char *dirName) {
     char *dirIgnore1 = ".";
     char *dirIgnore2 = "..";
 
+    int status;
     DIR *dir;
     struct dirent *dentry;
     char *name = malloc(sizeof(char) * NAME_LENGTH);
 
-    if ((dir = opendir(dirName)) == NULL){ //directory was open unsucessfuly
+    if ((dir = opendir(dirName)) == NULL) { //directory was open unsucessfuly
         perror(dirName);
-        return 1;
+        exit(-1);
     }
 
-    while ((dentry = readdir(dir)) != NULL)
-    {
+    while ((dentry = readdir(dir)) != NULL) {
+        
         struct stat stat_entry;
 
         sprintf(name, "%s/%s", dirName, dentry->d_name);
 
-        if (stat(name, &stat_entry) == SO_ERROR_NUMBER)
-        {
+        if (stat(name, &stat_entry) == SO_ERROR_NUMBER) {
             perror(name);
-            return 3;
+            exit(-1);
         }
 
-        if (S_ISREG(stat_entry.st_mode))
-        {
+        if (S_ISREG(stat_entry.st_mode)) {
             printFileInfo(name);
         }
-        else if (S_ISDIR(stat_entry.st_mode))
-        {
-            if ((strcmp(dentry->d_name, dirIgnore1) != 0) && (strcmp(dentry->d_name, dirIgnore2) != 0))
-            {
-                printFileInfo(name);
 
+        else if (S_ISDIR(stat_entry.st_mode)) {
+            if ((strcmp(dentry->d_name, dirIgnore1) != 0) && (strcmp(dentry->d_name, dirIgnore2) != 0)) {
                 pid_t pid = fork();
-                if (pid == 0)
-                {
+                if (pid == 0) {
                     readDirectory(name);
                     break;
                 }
-                else
-                {
-                    wait(NULL);
+                else {
+                    wait(&status);
                 }
             }
         }
     }
 
     free(name);
-
-    return 0;
+    closedir(dir);
+    exit(0);
 }
 
-int main(int argc, char **argv, char **envp)
-{
+int main(int argc, char **argv, char **envp) {
+    
     memset(&VStatus, 0, sizeof(variableStatus));
     memset(&trackfileAndDir, 0, sizeof(Number));
     memset(&algorithmStatus, 0, sizeof(Algorithms));
-    completeVariableStatusStruct(&VStatus, argc, argv);
-
-    // printf("-r: %d\n", VStatus.analise_files);
-    // printf("-h: %d\n", VStatus.digit_print);
-    // printf("-o: %d\n", VStatus.save_in_file);
-    // printf("-v: %d\n", VStatus.logfile);
-
-    if (VStatus.digit_print){
-        if(completeAlgorithmStatus(argc, argv)<0)
-            return 0;
-    }
-
-    printf("md5    : %d\n", algorithmStatus.md5);
-    printf("sha1   : %d\n", algorithmStatus.sha1);
-    printf("sha256 : %d\n", algorithmStatus.sha256);
+    
+    completeVariableStatusStruct(argc, argv);
 
     char *enviro = getenv("LOGFILENAME");
-    if (enviro != NULL)
-    {
+    if (enviro != NULL) {
         printf("%s\n", enviro);
     }
 
-    if (VStatus.analise_files) // "-r" was input
-    {
-        return readDirectory(argv[argc - 1]);
+    if (VStatus.analise_files) { // "-r" was input
+        readDirectory(argv[argc - 1]);
     }
-    else if (argc == 2) // only 1 file to read
-    {
+
+    else if (argc == 2) { // only 1 file to read
         printFileInfo(argv[argc - 1]);
     }
 
