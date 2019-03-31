@@ -44,6 +44,17 @@ variableStatus VStatus;
 Number trackfileAndDir;
 Algorithms algorithmStatus;
 
+void sigUser_handler(int signo) {
+    if (signo == SIGUSR1)
+        trackfileAndDir.directories++;
+    else 
+        trackfileAndDir.files++;
+}
+
+void sigint_handler(int signo) {
+    kill(-getppid(), SIGTERM ) ; // A considerar cenas pendentes
+}
+
 void completeVariableStatusStruct(int argc, char **argv) {
     int option;
     char *h_args = NULL;
@@ -95,6 +106,8 @@ void completeVariableStatusStruct(int argc, char **argv) {
                 exit(1);
         }
 }
+
+
 
 //consultar link para as flags
 //http://pubs.opengroup.org/onlinepubs/7908799/xsh/sysstat.h.html
@@ -287,6 +300,24 @@ void readDirectory(char *dirName) {
     exit(0);
 }
 
+int existsFile(char * name) {
+    if (access( name ,F_OK) == -1) 
+        return 0; // existe
+    else
+        return 1; // nao existe
+    
+}
+
+int SaveInFile(int fd) 
+{
+    if (dup2(fd, STDOUT_FILENO) == SO_ERROR_NUMBER) {
+        return 1;
+    }
+    
+    return 0;
+}
+
+
 int main(int argc, char **argv, char **envp) {
     
     memset(&VStatus, 0, sizeof(variableStatus));
@@ -295,18 +326,47 @@ int main(int argc, char **argv, char **envp) {
     
     completeVariableStatusStruct(argc, argv);
 
+    /*
+    PARA CRIAR A VARIAVEL : export LOGFILENAME=name.txt
+    */
     char *enviro = getenv("LOGFILENAME");
     if (enviro != NULL) {
         printf("%s\n", enviro);
+    }
+
+   // char *outfile = "out1.txt"; // = argv[]
+    if (VStatus.save_in_file == 1)
+    {
+     int fd =  open("out1.txt", O_TRUNC|O_WRONLY) ;
+     if (fd == -1)
+        return 1;
+    
+     if (SaveInFile(fd) == 1) 
+           return 1;
+    
+    //  if (existsFile(outfile) == 0) {
+         
+    //      if ( (fd = open(outfile, O_TRUNC|O_WRONLY)) == -1)
+    //         return 1;
+    //  }  else {
+    //      if ( (fd= open(outfile, O_CREAT |O_WRONLY)) == -1)   
+    //         return 1;
+    //  }
+
+    //     if (SaveInFile(fd) == 1) 
+    //         return 1;
+    // }
     }
 
     if (VStatus.analise_files) { // "-r" was input
         readDirectory(argv[argc - 1]);
     }
 
-    else if (argc == 2) { // only 1 file to read
+    else if (argc == 2 || (argc == 3 && VStatus.save_in_file)) { // only 1 file to read
         printFileInfo(argv[argc - 1]);
     }
+
+    
 
     return 0;
 }
