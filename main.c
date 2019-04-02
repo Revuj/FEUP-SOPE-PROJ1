@@ -44,15 +44,25 @@ variableStatus VStatus;
 Number trackfileAndDir;
 Algorithms algorithmStatus;
 
+int stdoutCopy;
+
+pid_t parentPid;
+
 void sigUser_handler(int signo) {
-    if (signo == SIGUSR1)
+    if (signo == SIGUSR1) {
         trackfileAndDir.directories++;
-    else 
+
+        char * dirStr = malloc(sizeof(char) * 256);
+        sprintf(dirStr, "New directory: %d/%d at this time.\n", trackfileAndDir.directories, trackfileAndDir.files);
+        write(stdoutCopy, dirStr, sizeof(char) * strlen(dirStr));
+    }
+    else {
         trackfileAndDir.files++;
+    }
 }
 
 void sigint_handler(int signo) {
-    kill(-getppid(), SIGTERM ) ; // A considerar cenas pendentes
+    kill(-getpgid(getpid()), SIGTERM); // A considerar cenas pendentes
 }
 
 void completeVariableStatusStruct(int argc, char **argv) {
@@ -279,6 +289,8 @@ void readDirectory(char *dirName) {
         }
 
         if (S_ISREG(stat_entry.st_mode)) {
+            if (VStatus.save_in_file)
+                kill(parentPid, SIGUSR2);
             printFileInfo(name);
         }
 
@@ -287,10 +299,12 @@ void readDirectory(char *dirName) {
                 pid_t pid = fork();
                 if (pid == 0) {
                     readDirectory(name);
-                    break;
+                    exit(1);
                 }
                 else {
-                    wait(&status);
+                    waitpid(pid, &status, 0);
+                    if (VStatus.save_in_file)
+                        kill(parentPid, SIGUSR1);
                 }
             }
         }
@@ -298,7 +312,6 @@ void readDirectory(char *dirName) {
 
     free(name);
     closedir(dir);
-    exit(0);
 }
 
 int existsFile(char * name) {
@@ -320,6 +333,23 @@ int SaveInFile(int fd)
 
 
 int main(int argc, char **argv, char **envp) {
+
+    struct sigaction action;
+    action.sa_handler = sigint_handler;
+    sigemptyset(&action.sa_mask);
+    action.sa_flags = SA_RESTART;
+
+    sigaction(SIGINT, &action, NULL);
+
+    action.sa_handler = sigUser_handler;
+    action.sa_flags = 0;
+    sigaction(SIGUSR2, &action, NULL);
+    sigaction(SIGUSR1, &action, NULL);
+    
+    stdoutCopy = dup(STDOUT_FILENO);
+
+    parentPid = getpid();
+    //sleep(5);
     
     memset(&VStatus, 0, sizeof(variableStatus));
     memset(&trackfileAndDir, 0, sizeof(Number));
@@ -327,6 +357,7 @@ int main(int argc, char **argv, char **envp) {
     
     completeVariableStatusStruct(argc, argv);
 
+    
     /*
     PARA CRIAR A VARIAVEL : export LOGFILENAME=name.txt
     */
@@ -366,6 +397,10 @@ int main(int argc, char **argv, char **envp) {
     else if (argc == 2 || (argc == 3 && VStatus.save_in_file)) { // only 1 file to read
         printFileInfo(argv[argc - 1]);
     }
+
+    char * dirStr = malloc(sizeof(char) * 256);
+    sprintf(dirStr, "Number of directories/files: %d/%d at this time.\n", trackfileAndDir.directories, trackfileAndDir.files);
+    write(stdoutCopy, dirStr, sizeof(char) * strlen(dirStr));
 
     return 0;
 }
