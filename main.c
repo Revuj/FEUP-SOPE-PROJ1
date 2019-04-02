@@ -94,6 +94,7 @@ void completeVariableStatusStruct(int argc, char **argv) {
                     printf("Too many values entered for option -a\n");
                     exit(1);
                 }
+                break;
             case 'o':
                 VStatus.save_in_file=1;
                 break;
@@ -365,8 +366,6 @@ int main(int argc, char **argv, char **envp) {
     else if (argc == 2 || (argc == 3 && VStatus.save_in_file)) { // only 1 file to read
         printFileInfo(argv[argc - 1]);
     }
-
-    
 
     return 0;
 }

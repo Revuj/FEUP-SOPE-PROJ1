@@ -1,1 +1,2 @@
-folder1,directory,4096,wrx,2019-03-31T18:09:08,2019-03-31T18:09:08
+folder1/folder1.1/out1.1.txt,ASCII text,3,r,2019-04-02T14:07:03,2019-04-02T14:07:03,b9155515728fa0f69d9770f7877cb50a
+folder1/out.txt,very short file (no magic),1,r,2019-04-02T14:07:03,2019-04-02T14:07:03,68b329da9893e34099c7d8ad5cb9c940
