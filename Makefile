@@ -3,7 +3,7 @@
 all: foresinc
 
 foresinc: main.o
-	@gcc -Wall -Werror -pedantic $^ -o $@
+	@gcc -Wall -pedantic $^ -o $@
 
 main.o: main.c
 
