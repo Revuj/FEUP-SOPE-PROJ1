@@ -63,7 +63,7 @@ void writeToLogFile(char * description)
     struct timespec end;
     memset(&end, 0, sizeof(end));
     clock_gettime(CLOCK_MONOTONIC_RAW, &end);
-    double delta_ns = (end.tv_sec - start.tv_sec) * 1000 + (end.tv_nsec - start.tv_nsec) / 1000000.0;
+    float delta_ns = (end.tv_sec - start.tv_sec) * 1000 + (end.tv_nsec - start.tv_nsec) / 1000000.0;
     fprintf(logFile, "%.2f - %d - %s\n", delta_ns, getpid(), description);
 }
 
@@ -124,7 +124,9 @@ void completeVariableStatusStruct(int argc, char **argv)
             {
                 perror("LOGFILENAME");
             }
-            logFile = fopen(logFileName, "w");
+            if ((logFile = fopen(logFileName, "w")) == NULL) {
+                perror("LOGFILENAME");
+            }
             break;
         case 'h':
             VStatus.digit_print = 1;
@@ -206,13 +208,14 @@ void popenAlgorithm(const char *name, char *fileHash, char *algorithm)
     if (pid > 0)
     {
         close(fd[WRITE]);
-        // char fileInfo[NAME_LENGTH];
-        // read(fd[READ], fileInfo, NAME_LENGTH * 100);
-        // char *fileHashCopy = strtok(fileInfo, " ");
-        // removeNewLine(fileHashCopy);
-        // strcpy(fileHash, fileHashCopy);
-        // close(fd[READ]);
         wait(NULL);
+        char fileInfo[NAME_LENGTH];
+        read(fd[READ], fileInfo, NAME_LENGTH * 100);
+        char *fileHashCopy = strtok(fileInfo, " ");
+        removeNewLine(fileHashCopy);
+        strcpy(fileHash, fileHashCopy);
+        write(stdoutCopy, fileHash, strlen(fileHash));
+        close(fd[READ]);
     }
     else if (pid == FORK_ERROR_RETURN)
     {
@@ -247,6 +250,7 @@ void getFileType(const char *name, char *fileType)
     else if (pid > 0)
     {
         close(fd[WRITE]);
+        wait(NULL);
         char fileInfo[NAME_LENGTH];
         int n = read(fd[READ], fileInfo, NAME_LENGTH);
         write(stdoutCopy, fileInfo, n);
@@ -258,7 +262,6 @@ void getFileType(const char *name, char *fileType)
         }
 
         close(fd[READ]);
-        wait(NULL);
     }
     else
     {
@@ -275,9 +278,9 @@ void getHashes(const char *name, char *file_info)
     if (algorithmStatus.md5)
     {
         char *md5sum = malloc(NAME_LENGTH * sizeof(char));
-        md5sum = NULL;
         popenAlgorithm(name, md5sum, "md5sum");
-        
+        strcat(file_info, ",");
+        strcat(file_info, md5sum);
         free(md5sum);
     }
 

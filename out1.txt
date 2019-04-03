@@ -1,3 +1,26 @@
-folder1/folder2/out3.txt,ASCII text,3,r,2019-04-03T13:17:27,2019-04-03T13:08:54
-folder1/out2.txt,very short file (no magic),1,r,2019-04-03T13:17:02,2019-04-03T13:08:54
-folder1/out22.txt,empty,0,r,2019-04-03T13:18:18,2019-04-03T13:18:18
+folder1/pack.png,PNG image data, 512 x 512, 8-bit/color RGBA, non-interlaced,308550,r,2019-04-03T19:39:29,2018-10-19T16:40:02,3af719ac8f9eacf597e2cdf6ea9d7481
+folder1/folder2/out3.txt,ASCII text,3,r,2019-04-03T13:17:27,2019-04-03T13:08:54,b9155515728fa0f69d9770f7877cb50a
+folder1/out2.txt,very short file (no magic),1,r,2019-04-03T13:17:02,2019-04-03T13:08:54,68b329da9893e34099c7d8ad5cb9c940
+folder1/folder2/ex4-t5g8-1/MyTriangleSmall.js,ASCII text,637,r,2019-03-27T21:39:05,2019-03-18T10:35:37,f6a28b222b4f87d702ab6102f6f129dd
+folder1/folder2/ex4-t5g8-1/MyTriangle.js,ASCII text,1140,r,2019-03-27T21:39:05,2019-03-20T12:50:58,1f70220c87eab5b3e45b8e7fa3c3258f
+folder1/folder2/ex4-t5g8-1/MyParallelogram.js,ASCII text,1264,r,2019-03-27T21:39:05,2019-03-18T10:39:54,f3896039939d8af8e996f3869ec80b48
+folder1/folder2/ex4-t5g8-1/MyScene.js,ASCII text, with CRLF line terminators,6387,r,2019-03-27T21:39:05,2019-03-18T11:19:06,8f86a2b71050bb4a0b612305cd815ca1
+folder1/folder2/ex4-t5g8-1/index.html,HTML document, ASCII text, with CRLF line terminators,375,r,2019-03-27T21:39:05,2019-03-13T10:28:04,49c2b0687f78ddd9319b60a330df7eae
+folder1/folder2/ex4-t5g8-1/MyTriangleBig.js,ASCII text,628,r,2019-03-27T21:39:05,2019-03-18T10:33:50,4e4cfc2de4c85a22bf90ffd7d2530f20
+folder1/folder2/ex4-t5g8-1/MyQuad.js,ASCII text, with CRLF line terminators,1109,r,2019-03-27T21:39:05,2019-03-13T10:28:12,e8fba39d3cb34cc598a57f1cb00c725d
+folder1/folder2/ex4-t5g8-1/main.js,ASCII text, with very long lines, with CRLF line terminators,1458,r,2019-03-27T21:39:05,2019-03-18T10:49:10,04e4e8ee2e6d43126a57d864df824e6b
+folder1/folder2/ex4-t5g8-1/MyUnitCubeQuad.js,ASCII text,1714,r,2019-03-27T21:39:05,2019-03-18T11:42:51,9eedeb1645c71f360c7f60d4891f8e5d
+folder1/folder2/ex4-t5g8-1/MyTangram.js,ASCII text,4897,r,2019-03-27T21:39:05,2019-03-20T12:51:27,d5be6bab3eac2f2d62485bf903bf23fb
+folder1/folder2/ex4-t5g8-1/MyUnitCube.js,ASCII text,1745,r,2019-03-27T21:39:05,2019-03-13T10:28:06,d591a0679ed5987fdc4c086409ba25f8
+folder1/folder2/ex4-t5g8-1/MyInterface.js,ASCII text, with CRLF line terminators,2812,r,2019-03-27T21:39:05,2019-03-18T11:18:15,abc6c9df3542d2e76264371d202b556e
+folder1/folder2/ex4-t5g8-1/MyDiamond.js,ASCII text, with CRLF line terminators,817,r,2019-03-27T21:39:05,2019-03-18T10:06:04,a857ecd9c2987c2a92d3222101dfc0c2
+folder1/folder2/ex4-t5g8-1/images/mineTop.png,PNG image data, 16 x 16, 8-bit/color RGB, non-interlaced,777,r,2019-03-27T21:39:05,2019-03-13T10:28:46,b13860bf8c545db15f6e14f75c8ca66e
+folder1/folder2/ex4-t5g8-1/images/tangram.png,PNG image data, 512 x 512, 8-bit/color RGBA, non-interlaced,6202,r,2019-03-27T21:39:05,2019-03-13T10:28:56,251e0e97f45fc0722e62d50e958ef603
+folder1/folder2/ex4-t5g8-1/images/mineSide.png,PNG image data, 16 x 16, 8-bit/color RGB, non-interlaced,812,r,2019-03-27T21:39:05,2019-03-13T10:28:44,38d98164492d26677046433463e6563b
+folder1/folder2/ex4-t5g8-1/images/tangram-lines.png,PNG image data, 512 x 512, 8-bit/color RGBA, non-interlaced,7163,r,2019-03-27T21:39:05,2019-03-13T10:28:48,acfee576dd0d288d8e81310aa4edcc0a
+folder1/folder2/ex4-t5g8-1/images/window.jpg,JPEG image data, JFIF standard 1.01, resolution (DPI), density 96x96, segment length 16, Exif Standard: [TIFF image data, big-endian, direntries=9, xresolution=122, yresolution=130, resolutionunit=2, software=,10440,r,2019-03-27T21:39:05,2019-03-13T10:29:00,0377f4597d7a80e1085615c055f0c83b
+folder1/folder2/ex4-t5g8-1/images/board.jpg,JPEG image data, JFIF standard 1.01, resolution (DPI), density 72x72, segment length 16, Exif Standard: [TIFF image data, big-endian, direntries=12, model=PENTAX Optio M40, xresolution=176, yresolution=184, res,47809,r,2019-03-27T21:39:05,2019-03-13T10:28:34,7386fbc9553b8a943647cdbc3d555ae8
+folder1/folder2/ex4-t5g8-1/images/default.png,PNG image data, 256 x 256, 8-bit/color RGBA, non-interlaced,7372,r,2019-03-27T21:39:05,2019-03-13T10:28:36,e55cec2e290d18bc26adcefae79c9ef7
+folder1/folder2/ex4-t5g8-1/images/tangram-pattern.jpg,JPEG image data, JFIF standard 1.01, resolution (DPI), density 96x96, segment length 16, Exif Standard: [TIFF image data, big-endian, direntries=7, xresolution=98, yresolution=106, resolutionunit=2, s,89433,r,2019-03-27T21:39:05,2019-03-13T10:28:52,52c94228a70410212a160b83cf170c78
+folder1/folder2/ex4-t5g8-1/images/floor.png,PNG image data, 64 x 64, 8-bit/color RGBA, non-interlaced,10732,r,2019-03-27T21:39:05,2019-03-13T10:28:38,d3ed9c8cea43c2afa202fa0d0bc36626
+folder1/folder2/ex4-t5g8-1/images/mineBottom.png,PNG image data, 16 x 16, 8-bit/color RGB, non-interlaced,866,r,2019-03-27T21:39:05,2019-03-13T10:28:42,83a7a1ac22c0611c34ea119aa8790f9c
