@@ -55,9 +55,13 @@ void sigUser_handler(int signo) {
         char * dirStr = malloc(sizeof(char) * 256);
         sprintf(dirStr, "New directory: %d/%d at this time.\n", trackfileAndDir.directories, trackfileAndDir.files);
         write(stdoutCopy, dirStr, sizeof(char) * strlen(dirStr));
+        printf("/n DIR /n");
+        fflush(stdout);
     }
     else {
         trackfileAndDir.files++;
+        printf("/n FILE /n");
+        fflush(stdout);
     }
 }
 
@@ -260,6 +264,7 @@ void printFileInfo(char *name) {
     char *file_info = malloc(1024 * sizeof(char));
     analyseFile(name, file_info);
     printf("%s\n", file_info);
+    fflush(stdout);
     free(file_info);
 }
 
@@ -298,13 +303,13 @@ void readDirectory(char *dirName) {
             if ((strcmp(dentry->d_name, dirIgnore1) != 0) && (strcmp(dentry->d_name, dirIgnore2) != 0)) {
                 pid_t pid = fork();
                 if (pid == 0) {
+                    if (VStatus.save_in_file)
+                        kill(parentPid, SIGUSR1);
                     readDirectory(name);
                     exit(1);
                 }
                 else {
                     waitpid(pid, &status, 0);
-                    if (VStatus.save_in_file)
-                        kill(parentPid, SIGUSR1);
                 }
             }
         }
