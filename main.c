@@ -214,7 +214,6 @@ void popenAlgorithm(const char *name, char *fileHash, char *algorithm)
         char *fileHashCopy = strtok(fileInfo, " ");
         removeNewLine(fileHashCopy);
         strcpy(fileHash, fileHashCopy);
-        write(stdoutCopy, fileHash, strlen(fileHash));
         close(fd[READ]);
     }
     else if (pid == FORK_ERROR_RETURN)
@@ -252,15 +251,13 @@ void getFileType(const char *name, char *fileType)
         close(fd[WRITE]);
         wait(NULL);
         char fileInfo[NAME_LENGTH];
-        int n = read(fd[READ], fileInfo, NAME_LENGTH);
-        write(stdoutCopy, fileInfo, n);
+        read(fd[READ], fileInfo, NAME_LENGTH);
         char * fileCopy = malloc(sizeof(char) * NAME_LENGTH);
         if ((fileCopy = strstr(fileInfo, " ")) != NULL) {
             fileCopy++;
             removeNewLine(fileCopy);
             strcpy(fileType, fileCopy);
         }
-
         close(fd[READ]);
     }
     else
