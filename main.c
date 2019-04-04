@@ -65,16 +65,19 @@ void writeToLogFile(char * description)
     clock_gettime(CLOCK_MONOTONIC_RAW, &end);
     float delta_ns = (end.tv_sec - start.tv_sec) * 1000 + (end.tv_nsec - start.tv_nsec) / 1000000.0;
     fprintf(logFile, "%.2f - %d - %s\n", delta_ns, getpid(), description);
+    fflush(logFile);
 }
 
 void sigUser_handler(int signo)
 {
+    printf("PID = %d - ATINGIDO\n", getpid());
+    fflush(stdout);
     if (signo == SIGUSR1)
     {
         trackfileAndDir.directories++;
 
         char *dirStr = malloc(sizeof(char) * 256);
-        sprintf(dirStr, "New directory: %d/%d at this time.\n", trackfileAndDir.directories, trackfileAndDir.files);
+        sprintf(dirStr, "New directory: %d/%d directories/files at this time.\n", trackfileAndDir.directories, trackfileAndDir.files);
         write(stdoutCopy, dirStr, sizeof(char) * strlen(dirStr));
         free(dirStr);
 
@@ -102,16 +105,24 @@ void sigchild_handler(int signo) {
     wait(NULL);
 }
 
+void saveInFile(int fd)
+{
+    if (dup2(fd, STDOUT_FILENO) == SO_ERROR_NUMBER)
+    {
+        perror("DUP2");
+        exit(1);
+    }
+}
+
 void completeVariableStatusStruct(int argc, char **argv)
 {
     int option;
-    char *h_args = NULL;
     char *token;
     size_t i = 0;
 
     opterr = 0;
 
-    while ((option = getopt(argc, argv, "h:ro:v")) != -1)
+    while ((option = getopt(argc, argv, "h:ro:v")) != -1) {
         switch (option)
         {
         case 'r':
@@ -120,7 +131,7 @@ void completeVariableStatusStruct(int argc, char **argv)
         case 'v':
             VStatus.logfile = 1;
             char *logFileName = getenv("LOGFILENAME");
-            if (logFileName != NULL)
+            if (logFileName == NULL)
             {
                 perror("LOGFILENAME");
             }
@@ -130,8 +141,7 @@ void completeVariableStatusStruct(int argc, char **argv)
             break;
         case 'h':
             VStatus.digit_print = 1;
-            h_args = optarg;
-            token = strsep(&h_args, ",");
+            token = strsep(&optarg, ",");
             while (token != NULL)
             {
                 if (!strcmp(token, "md5") && algorithmStatus.md5 == 0)
@@ -145,18 +155,24 @@ void completeVariableStatusStruct(int argc, char **argv)
                     printf("Wrong values entered for option -h\n");
                     exit(1);
                 }
-                token = strsep(&h_args, ",");
+                token = strsep(&optarg, ",");
                 i++;
             }
-
             if (i > 3)
             {
-                printf("Too many values entered for option -a\n");
+                printf("Too many values entered for option -h\n");
                 exit(1);
             }
             break;
         case 'o':
             VStatus.save_in_file = 1;
+            int fd = open(optarg, O_TRUNC | O_WRONLY);
+            if (fd < 0) {
+                perror(optarg);
+                exit(1);
+            }
+            saveInFile(fd);
+            close(fd);
             break;
         case '?':
             if (optopt == 'h' || optopt == 'o')
@@ -167,6 +183,7 @@ void completeVariableStatusStruct(int argc, char **argv)
         default:
             exit(1);
         }
+    }
 }
 
 //consultar link para as flags
@@ -265,7 +282,6 @@ void getFileType(const char *name, char *fileType)
         close(fd[READ]);
         dup2(fd[WRITE], STDOUT_FILENO);
         execlp("file", "file", name, NULL);
-        close(fd[WRITE]);
     }
 }
 
@@ -343,6 +359,7 @@ void readDirectory(char *dirName)
     DIR *dir;
     struct dirent *dentry;
     char *name = malloc(sizeof(char) * NAME_LENGTH);
+    int process_counter=0,status;
 
     if ((dir = opendir(dirName)) == NULL)
     { //directory was open unsucessfuly
@@ -352,7 +369,6 @@ void readDirectory(char *dirName)
 
     while ((dentry = readdir(dir)) != NULL)
     {
-
         struct stat stat_entry;
 
         sprintf(name, "%s/%s", dirName, dentry->d_name);
@@ -365,38 +381,53 @@ void readDirectory(char *dirName)
 
         if (S_ISREG(stat_entry.st_mode))
         {   
-            if (VStatus.logfile)
-                writeToLogFile("FOUND NEW FILE");
             if (VStatus.save_in_file) {
-                kill(parentPid, SIGUSR2);
                 if (VStatus.logfile)
-                        writeToLogFile("SENT SIGUSR2");
+                    writeToLogFile("SENT SIGUSR2");
+                printf("PID = %d - MANDEI UM SINAL\n", getpid());
+                fflush(stdout);
+
+                kill(parentPid, SIGUSR2);
             }
             printFileInfo(name);
+            if (VStatus.logfile){
+                char logInfo[266];
+                sprintf(logInfo,"ANALIZED %s",dentry->d_name);
+                writeToLogFile(logInfo);
+
+            }
         }
 
         else if (S_ISDIR(stat_entry.st_mode))
         {
             if ((strcmp(dentry->d_name, dirIgnore1) != 0) && (strcmp(dentry->d_name, dirIgnore2) != 0))
             {
+                if (VStatus.save_in_file) {
+                    if (VStatus.logfile)
+                        writeToLogFile("SENT SIGUSR1");
+                    printf("PID = %d - MANDEI UM SINAL\n", getpid());
+                    fflush(stdout);
+
+                    kill(parentPid, SIGUSR1);
+                }
+                
                 pid_t pid = fork();
+                
+                if (VStatus.logfile)
+                    writeToLogFile("NEW PROCESS CREATED");
+                
                 if (pid == 0)
                 {
-                    if (VStatus.logfile)
-                        writeToLogFile("NEW PROCESS CREATED");
                     readDirectory(name);
-                    exit(1);
+                    exit(55);
                 }
-                else
+                else if(pid > 0)
                 {
-                    if (VStatus.save_in_file) {
-                        kill(parentPid, SIGUSR1);
-                        if (VStatus.logfile)
-                        writeToLogFile("SENT SIGUSR1");
-                    }
-                    //waitpid(pid, NULL, 0);
-                    if (VStatus.logfile)
-                        writeToLogFile("PROCESS ENDED");
+                    process_counter++;
+                }
+                else {
+                    perror("FORK");
+                    exit(1);
                 }
             }
         }
@@ -405,32 +436,15 @@ void readDirectory(char *dirName)
 
     free(name);
     closedir(dir);
-}
 
-int existsFile(char *name)
-{
-    if (access(name, F_OK) == -1)
-        return 0; // existe
-    else
-        return 1; // nao existe
-}
+    pid_t wpid;
+    while ((wpid = wait(&status)) > 0);
 
-int SaveInFile(int fd)
-{
-    if (dup2(fd, STDOUT_FILENO) == SO_ERROR_NUMBER)
-    {
-        return 1;
-    }
-
-    return 0;
 }
 
 int main(int argc, char **argv, char **envp)
 {
-
-    memset(&start, 0, sizeof(start));
-
-    start = getInitialTime();
+    stdoutCopy = dup(STDOUT_FILENO);
 
     struct sigaction action;
     action.sa_handler = sigint_handler;
@@ -438,18 +452,6 @@ int main(int argc, char **argv, char **envp)
     action.sa_flags = SA_RESTART;
 
     sigaction(SIGINT, &action, NULL);
-
-    action.sa_handler = sigUser_handler;
-    action.sa_flags = 0;
-    sigaction(SIGUSR2, &action, NULL);
-    sigaction(SIGUSR1, &action, NULL);
-
-    action.sa_handler = sigchild_handler;
-    action.sa_flags = 0;
-    sigaction(SIGCHLD, &action, NULL);
-
-
-    stdoutCopy = dup(STDOUT_FILENO);
 
     parentPid = getpid();
 
@@ -460,17 +462,19 @@ int main(int argc, char **argv, char **envp)
 
     completeVariableStatusStruct(argc, argv);
 
-    // char *outfile = "out1.txt"; // = argv[]
-    if (VStatus.save_in_file == 1)
-    {
-        int fd = open("out1.txt", O_TRUNC | O_WRONLY);
-        if (fd == -1)
-            return 1;
-
-        if (SaveInFile(fd) == 1)
-            return 1;
-
+    if(VStatus.logfile){
+        memset(&start, 0, sizeof(start));
+        start = getInitialTime();
     }
+
+    if (VStatus.save_in_file)
+    {
+        action.sa_handler = sigUser_handler;
+        action.sa_flags = 0;
+        sigaction(SIGUSR2, &action, NULL);
+        sigaction(SIGUSR1, &action, NULL);
+    }
+    
 
     if (VStatus.analise_files)
     { // "-r" was input
@@ -482,14 +486,9 @@ int main(int argc, char **argv, char **envp)
         printFileInfo(argv[argc - 1]);
     }
 
-    char *dirStr = malloc(sizeof(char) * 256);
-    sprintf(dirStr, "Number of directories/files: %d/%d at this time.\n", trackfileAndDir.directories, trackfileAndDir.files);
-    write(stdoutCopy, dirStr, sizeof(char) * strlen(dirStr));
-    free(dirStr);
-    
-
     if (VStatus.logfile)
         writeToLogFile("ENDED PROGRAM");
+
     return 0;
 }
 
