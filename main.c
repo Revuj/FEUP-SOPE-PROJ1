@@ -433,9 +433,8 @@ void readDirectory(char *dirName)
     closedir(dir);
 }
 
-int main(int argc, char **argv, char **envp)
-{
-    stdoutCopy = dup(STDOUT_FILENO);
+
+void installSIGINTHandler() {
 
     struct sigaction action;
     action.sa_handler = sigint_handler;
@@ -443,16 +442,19 @@ int main(int argc, char **argv, char **envp)
     action.sa_flags = SA_RESTART;
 
     sigaction(SIGINT, &action, NULL);
+}
 
-    parentPid = getpid();
-
+void initializeStructValues() {
     memset(&VStatus, 0, sizeof(variableStatus));
     memset(&trackfileAndDir, 0, sizeof(Number));
     memset(&algorithmStatus, 0, sizeof(Algorithms));
+}
 
-    completeVariableStatusStruct(argc, argv);
+void processFunctionalities()
+{
 
-    if(VStatus.logfile){
+    if (VStatus.logfile)
+    {
         memset(&start, 0, sizeof(start));
         start = getInitialTime();
     }
@@ -464,19 +466,30 @@ int main(int argc, char **argv, char **envp)
         sigaction(SIGUSR2, &action, NULL);
         sigaction(SIGUSR1, &action, NULL);
     }
-    
-    if (VStatus.analise_files)
-    { // "-r" was input
+
+    if (VStatus.analise_files) // "-r" was input
+    { 
         readDirectory(argv[argc - 1]);
     }
 
-    else if (argc == 2 || (argc == 3 && VStatus.save_in_file))
-    { // only 1 file to read
+    else if (argc == 2 || (argc == 3 && VStatus.save_in_file)) // only 1 file to read
+    { 
         printFileInfo(argv[argc - 1]);
     }
 
     if (VStatus.logfile)
         writeToLogFile("ENDED PROGRAM");
+}
+
+int main(int argc, char **argv, char **envp)
+{
+    stdoutCopy = dup(STDOUT_FILENO);
+    parentPid = getpid();
+
+   initializeStructValues();
+   installSIGINTHandler();
+   completeVariableStatusStruct(argc, argv);
+   processFunctionalities();
 
     return 0;
 }
