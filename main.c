@@ -438,8 +438,8 @@ void readDirectory(char *dirName)
 
                     sigprocmask(SIG_BLOCK, &mask, &oldmask);
                     sigsuspend(&oldmask);
-                    if (process_counter > 0)
-                        wait(NULL);
+                    //arranjar maneira de fazer os waits todos
+                    wait(NULL);
                     sigprocmask(SIG_UNBLOCK, &mask, NULL);
 
                     process_counter++;
