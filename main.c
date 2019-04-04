@@ -99,10 +99,6 @@ void sigint_handler(int signo)
     kill(-getpgid(getpid()), SIGTERM);
 }
 
-void sigchild_handler(int signo) {
-    wait(NULL);
-}
-
 void saveInFile(int fd)
 {
     if (dup2(fd, STDOUT_FILENO) == SO_ERROR_NUMBER)
