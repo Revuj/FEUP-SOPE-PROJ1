@@ -70,8 +70,6 @@ void writeToLogFile(char * description)
 
 void sigUser_handler(int signo)
 {
-    printf("PID = %d - ATINGIDO\n", getpid());
-    fflush(stdout);
     if (signo == SIGUSR1)
     {
         trackfileAndDir.directories++;
@@ -353,16 +351,12 @@ void printFileInfo(char *name)
 
 void readDirectory(char *dirName)
 {
-    printf("EXEC PID = %d\n", getpid());
-    fflush(stdout);
-
     char *dirIgnore1 = ".";
     char *dirIgnore2 = "..";
 
     DIR *dir;
     struct dirent *dentry;
     char *name = malloc(sizeof(char) * NAME_LENGTH);
-    int process_counter=0;
 
     if ((dir = opendir(dirName)) == NULL)
     { //directory was open unsucessfuly
@@ -387,8 +381,6 @@ void readDirectory(char *dirName)
             if (VStatus.save_in_file) {
                 if (VStatus.logfile)
                     writeToLogFile("SENT SIGUSR2");
-                printf("PID = %d - MANDEI UM SINAL no ficheiro %s\n", getpid(), name);
-                fflush(stdout);
 
                 kill(parentPid, SIGUSR2);
             }
@@ -408,9 +400,6 @@ void readDirectory(char *dirName)
                 if (VStatus.save_in_file) {
                     if (VStatus.logfile)
                         writeToLogFile("SENT SIGUSR1");
-                    printf("PID = %d - MANDEI UM SINAL no ficheiro %s\n", getpid(), name);                
-                    fflush(stdout);
-
                     kill(parentPid, SIGUSR1);
                 }
                 
@@ -420,29 +409,20 @@ void readDirectory(char *dirName)
                 if (VStatus.logfile)
                     writeToLogFile("NEW PROCESS CREATED");
                 
-                if (pid < 0) {
-                    printf("GANDA ERRO\n");
-                    fflush(stdout);
-                }
                 if (pid == 0)
                 {
                     readDirectory(name);
-                    exit(55);
+                    exit(0);
                 }
                 else if(pid > 0)
                 {
-                    sigset_t mask, oldmask;
-                    sigemptyset(&mask);
-                    sigaddset(&mask, SIGUSR1);
-                    sigaddset(&mask, SIGUSR2);
+                    
+                    pid_t wpid;
 
-                    sigprocmask(SIG_BLOCK, &mask, &oldmask);
-                    sigsuspend(&oldmask);
-                    //arranjar maneira de fazer os waits todos
-                    wait(NULL);
-                    sigprocmask(SIG_UNBLOCK, &mask, NULL);
-
-                    process_counter++;
+                    do {
+                        wpid = wait(NULL);
+                    } while (wpid == -1);
+                    
                 }
                 else {
                     perror("FORK");
@@ -455,9 +435,6 @@ void readDirectory(char *dirName)
 
     free(name);
     closedir(dir);
-
-    printf("%d LEAVING\n", getpid());
-    fflush(stdout);
 }
 
 int main(int argc, char **argv, char **envp)
@@ -471,14 +448,7 @@ int main(int argc, char **argv, char **envp)
 
     sigaction(SIGINT, &action, NULL);
 
-    action.sa_handler = sigchild_handler;
-    sigemptyset(&action.sa_mask);
-    action.sa_flags = 0;
-
-    sigaction(SIGCHLD, &action, NULL);
-
     parentPid = getpid();
-
 
     memset(&VStatus, 0, sizeof(variableStatus));
     memset(&trackfileAndDir, 0, sizeof(Number));
@@ -499,7 +469,6 @@ int main(int argc, char **argv, char **envp)
         sigaction(SIGUSR1, &action, NULL);
     }
     
-
     if (VStatus.analise_files)
     { // "-r" was input
         readDirectory(argv[argc - 1]);
