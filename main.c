@@ -51,6 +51,8 @@ int stdoutCopy;
 
 pid_t parentPid;
 
+int ctrlCPressed=0;
+
 void getInitialTime()
 {
     clock_gettime(CLOCK_MONOTONIC_RAW, &start);
@@ -93,8 +95,8 @@ void sigUser_handler(int signo)
 void sigint_handler(int signo)
 {
     if (VStatus.logfile)
-        writeToLogFile("PROGRAM TERMINADED (SIGTERM)");
-    kill(-getpgid(getpid()), SIGTERM);
+        writeToLogFile("RECEIVED SIGINT");
+    ctrlCPressed=1;
 }
 
 void saveInFile(int fd)
@@ -348,6 +350,8 @@ void readDirectory(char *dirName)
     struct dirent *dentry;
     char *name = malloc(sizeof(char) * NAME_LENGTH);
 
+    int processCounter=0,status;
+
     if ((dir = opendir(dirName)) == NULL)
     { //directory was open unsucessfuly
         perror(dirName);
@@ -406,13 +410,7 @@ void readDirectory(char *dirName)
                 }
                 else if(pid > 0)
                 {
-                    
-                    pid_t wpid;
-
-                    do {
-                        wpid = wait(NULL);
-                    } while (wpid == -1);
-                    
+                    processCounter++;            
                 }
                 else {
                     perror("FORK");
@@ -421,10 +419,22 @@ void readDirectory(char *dirName)
             }
         }
         name[0] = '\0';
+
+        if(ctrlCPressed){
+            break;
+        }
     }
 
     free(name);
     closedir(dir);
+
+    while(processCounter > 0){
+        if(wait(&status) < 0){
+            perror("WAIT");
+            exit(1);
+        }
+        processCounter--;
+    }
 }
 
 int isRegularFile(char *name) {
@@ -485,7 +495,7 @@ void processFunctionalities(int argc, char **argv)
         struct sigaction action;
         action.sa_handler = sigUser_handler;
         sigemptyset(&action.sa_mask);
-        action.sa_flags = 0;
+        action.sa_flags = SA_RESTART;
         sigaction(SIGUSR2, &action, NULL);
         sigaction(SIGUSR1, &action, NULL);
     }
