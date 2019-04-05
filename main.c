@@ -51,11 +51,9 @@ int stdoutCopy;
 
 pid_t parentPid;
 
-struct timespec getInitialTime()
+void getInitialTime()
 {
-    struct timespec start;
     clock_gettime(CLOCK_MONOTONIC_RAW, &start);
-    return start;
 }
 
 void writeToLogFile(char * description)
@@ -63,7 +61,7 @@ void writeToLogFile(char * description)
     struct timespec end;
     memset(&end, 0, sizeof(end));
     clock_gettime(CLOCK_MONOTONIC_RAW, &end);
-    float delta_ns = (end.tv_sec - start.tv_sec) * 1000 + (end.tv_nsec - start.tv_nsec) / 1000000.0;
+    double delta_ns = (end.tv_sec - start.tv_sec) * 1000 + (end.tv_nsec - start.tv_nsec) / 1000000.0;
     fprintf(logFile, "%.2f - %d - %s\n", delta_ns, getpid(), description);
     fflush(logFile);
 }
@@ -125,11 +123,7 @@ void completeVariableStatusStruct(int argc, char **argv)
         case 'v':
             VStatus.logfile = 1;
             char *logFileName = getenv("LOGFILENAME");
-            if (logFileName == NULL)
-            {
-                perror("LOGFILENAME");
-            }
-            if ((logFile = fopen(logFileName, "w")) == NULL) {
+            if ((logFile = fopen(logFileName, "a")) == NULL) {
                 perror("LOGFILENAME");
             }
             break;
@@ -385,7 +379,6 @@ void readDirectory(char *dirName)
                 char logInfo[266];
                 sprintf(logInfo,"ANALIZED %s",dentry->d_name);
                 writeToLogFile(logInfo);
-
             }
         }
 
@@ -404,7 +397,8 @@ void readDirectory(char *dirName)
                 
                 if (VStatus.logfile)
                     writeToLogFile("NEW PROCESS CREATED");
-                
+
+
                 if (pid == 0)
                 {
                     readDirectory(name);
@@ -433,6 +427,26 @@ void readDirectory(char *dirName)
     closedir(dir);
 }
 
+int isRegularFile(char *name) {
+    struct stat stat_entry;
+    
+    if (stat(name, &stat_entry) != 0) 
+    {
+        return 0;
+    }
+    
+    return S_ISREG(stat_entry.st_mode);
+}
+
+int isDirectory(char* name) {
+    struct stat stat_entry;
+    
+    if (stat(name, &stat_entry) != 0) {
+        return 0;
+    }
+    
+    return S_ISDIR(stat_entry.st_mode);
+}
 
 void installSIGINTHandler() {
 
@@ -450,18 +464,27 @@ void initializeStructValues() {
     memset(&algorithmStatus, 0, sizeof(Algorithms));
 }
 
-void processFunctionalities()
+void processFunctionalities(int argc, char **argv)
 {
-
     if (VStatus.logfile)
     {
         memset(&start, 0, sizeof(start));
-        start = getInitialTime();
+        getInitialTime();
+        
+        char command[NAME_LENGTH] = "COMMAND";
+        for(int i = 0; i < argc; i++) {
+            strcat(command, " ");
+            strcat(command, argv[i]);
+        }
+
+        writeToLogFile(command);
     }
 
     if (VStatus.save_in_file)
     {
+        struct sigaction action;
         action.sa_handler = sigUser_handler;
+        sigemptyset(&action.sa_mask);
         action.sa_flags = 0;
         sigaction(SIGUSR2, &action, NULL);
         sigaction(SIGUSR1, &action, NULL);
@@ -469,16 +492,35 @@ void processFunctionalities()
 
     if (VStatus.analise_files) // "-r" was input
     { 
-        readDirectory(argv[argc - 1]);
+        if(isDirectory(argv[argc - 1]))
+        {
+            readDirectory(argv[argc - 1]);
+        }
+
+        else 
+        {
+            printf("Path does not correspond to a directory.\n");
+        }
     }
 
-    else if (argc == 2 || (argc == 3 && VStatus.save_in_file)) // only 1 file to read
-    { 
-        printFileInfo(argv[argc - 1]);
+    else 
+    {
+        if (isRegularFile(argv[argc - 1]))
+        {
+            printFileInfo(argv[argc - 1]);
+        }
+
+        else 
+        {
+            printf("Path does not correspond to a file.\n");
+        }
     }
 
-    if (VStatus.logfile)
+    if (VStatus.logfile) 
+    {
         writeToLogFile("ENDED PROGRAM");
+        fclose(logFile);
+    }
 }
 
 int main(int argc, char **argv, char **envp)
@@ -486,10 +528,10 @@ int main(int argc, char **argv, char **envp)
     stdoutCopy = dup(STDOUT_FILENO);
     parentPid = getpid();
 
-   initializeStructValues();
-   installSIGINTHandler();
-   completeVariableStatusStruct(argc, argv);
-   processFunctionalities();
+    initializeStructValues();
+    installSIGINTHandler();
+    completeVariableStatusStruct(argc, argv);
+    processFunctionalities(argc, argv);
 
     return 0;
 }
